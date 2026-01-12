@@ -1,0 +1,6 @@
+<launch>
+
+<node pkg="sim_bridge" type="sim_mujoco" name="sim_mujoco" output="screen">
+</node>
+
+</launch>

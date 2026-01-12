@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot_param">
+<!-- 描述为 第一个腿部坐标系 向y平移 到第二个腿部坐标系 向z平移到第三个坐标系 向z平移到第四个坐标系-->
+    <!--第一个link为根坐标系 其默认坐标系为世界坐标系 相对偏移也是相对于该坐标系-->
+    <!--后续<joint>的origin定义了子link相对于父link的坐标系偏移-->
+    <!--<link>内部的origin（如视觉、碰撞模型）：描述该连杆内部元素相对于自身坐标系的偏移。-->
+<!-- 机体的描述base_link -->
+        <xacro:property name="robot_name" value="robot"/>
+        <xacro:property name="meshes_dir" value="package://robot_description/robot/meshes"/>
+    <!--电机的参数-->
+        <!--前两个关节-->
+        <xacro:property name="motor1_damping" value="0.01"/>
+        <xacro:property name="motor1_friction" value="0.2"/>
+        <xacro:property name="motor1_torque" value="36.0"/>
+        <xacro:property name="motor1_vel" value="17.3"/>
+        <!--第三个关节-->
+        <xacro:property name="motor2_damping" value="0.01"/>
+        <xacro:property name="motor2_friction" value="0.2"/>
+        <xacro:property name="motor2_torque" value="36.0"/>
+        <xacro:property name="motor2_vel" value="17.3"/>
+        <!--关节角度限制 最小 最大-->
+        <xacro:property name="joint1_lb" value="-3.14"/>
+        <xacro:property name="joint1_ub" value="3.14"/>
+        <xacro:property name="joint2_lb" value="-3.14"/>
+        <xacro:property name="joint2_ub" value="3.14"/>
+        <xacro:property name="joint3_lb" value="-3.14"/>
+        <xacro:property name="joint3_ub" value="3.14"/>
+
+    <!--body link-->
+        <!--质量-->
+        <xacro:property name="body_mass" value="5.0"/>
+        <!--重心偏移-->
+        <xacro:property name="body_com_x" value="0.00015"/>
+        <xacro:property name="body_com_y" value="0.00075"/>
+        <xacro:property name="body_com_z" value="-0.00400"/>
+        <!--惯性矩阵 负张量计数法-->
+        <xacro:property name="body_ixx" value="0.04181"/>
+        <xacro:property name="body_ixy" value="-0.00001"/>
+        <xacro:property name="body_ixz" value="0.00005"/>
+        <xacro:property name="body_iyy" value="0.05580"/>
+        <xacro:property name="body_iyz" value="0.00002"/>
+        <xacro:property name="body_izz" value="0.07930"/>
+<!--描述的是左上角的腿的数据 其他腿的数据根据镜像情况镜像 -->
+<!--leg-->
+        <!--joint1-->
+            <!--关节初始偏移量 gazebo需要 mujoco不需要-->
+            <xacro:property name="joint1_offest_init" value="0.0"/>
+            <!--关节相对父连杆的位置偏移-->
+            <xacro:property name="joint1_offest_x" value="0.177"/>
+            <xacro:property name="joint1_offest_y" value="0.0755"/>
+            <xacro:property name="joint1_offest_z" value="0.0"/>
+        <!--link1-->
+            <!--质量-->
+            <xacro:property name="link1_mass" value="0.68678"/>
+            <!--重心偏移-->
+            <xacro:property name="link1_com_x" value="-0.00461"/>
+            <xacro:property name="link1_com_y" value="-0.02471"/>
+            <xacro:property name="link1_com_z" value="0.00019"/>
+            <!--惯性矩阵 负张量计数法-->
+            <xacro:property name="link1_ixx" value="0.00051"/>
+            <xacro:property name="link1_ixy" value="-0.00005"/>
+            <xacro:property name="link1_ixz" value="0.0"/>
+            <xacro:property name="link1_iyy" value="0.00050"/>
+            <xacro:property name="link1_iyz" value="0.0"/>
+            <xacro:property name="link1_izz" value="0.00057"/>
+
+        <!--joint2-->
+            <!--关节初始偏移量 gazebo需要 mujoco不需要-->
+            <xacro:property name="joint2_offest_init" value="0.785"/> <!--45°-->
+            <!--关节相对父连杆的位置偏移-->
+            <xacro:property name="joint2_offest_x" value="0.0"/>
+            <xacro:property name="joint2_offest_y" value="0.0993"/>
+            <xacro:property name="joint2_offest_z" value="0.0"/>
+        <!--link2-->
+            <!--质量-->
+            <xacro:property name="link2_mass" value="1.22859"/>
+            <!--重心偏移-->
+            <xacro:property name="link2_com_x" value="-0.00238"/>
+            <xacro:property name="link2_com_y" value="-0.02441"/>
+            <xacro:property name="link2_com_z" value="-0.04244"/>
+            <!--惯性矩阵 负张量计数法-->
+            <xacro:property name="link2_ixx" value="0.00754"/>
+            <xacro:property name="link2_ixy" value="-0.00008"/>
+            <xacro:property name="link2_ixz" value="0.00033"/>
+            <xacro:property name="link2_iyy" value="0.00682"/>
+            <xacro:property name="link2_iyz" value="-0.00128"/>
+            <xacro:property name="link2_izz" value="0.00167"/>
+
+        <!--joint3-->
+            <!--关节初始偏移量 gazebo需要 mujoco不需要-->
+            <xacro:property name="joint3_offest_init" value="-2.355"/> <!---135°-->
+            <!--关节相对父连杆的位置偏移-->
+            <xacro:property name="joint3_offest_x" value="0.0"/>
+            <xacro:property name="joint3_offest_y" value="0.0"/>
+            <xacro:property name="joint3_offest_z" value="-0.21"/>
+        <!--link3-->
+            <!--质量-->
+            <xacro:property name="link3_mass" value="0.20045"/>
+            <!--重心偏移-->
+            <xacro:property name="link3_com_x" value="0.00418"/>
+            <xacro:property name="link3_com_y" value="0.000"/>
+            <xacro:property name="link3_com_z" value="-0.09392"/>
+            <!--惯性矩阵 负张量计数法-->
+            <xacro:property name="link3_ixx" value="0.00094"/>
+            <xacro:property name="link3_ixy" value="0.0"/>
+            <xacro:property name="link3_ixz" value="-0.00003"/>
+            <xacro:property name="link3_iyy" value="0.00094"/>
+            <xacro:property name="link3_iyz" value="0.0"/>
+            <xacro:property name="link3_izz" value="0.00003"/>
+
+        <!--joint4-->
+            <!--关节相对父连杆的位置偏移-->
+            <xacro:property name="joint4_offest_x" value="0.0"/>
+            <xacro:property name="joint4_offest_y" value="0.0"/>
+            <xacro:property name="joint4_offest_z" value="-0.21"/>
+        <!--link4-->
+            <!--质量-->
+            <xacro:property name="link4_mass" value="0.01658"/>
+            <!--重心偏移-->
+            <xacro:property name="link4_com_x" value="-0.00432"/>
+            <xacro:property name="link4_com_y" value="0.0"/>
+            <xacro:property name="link4_com_z" value="-0.00515"/>
+            <!--惯性矩阵 负张量计数法-->
+            <xacro:property name="link4_ixx" value="0.00001"/>
+            <xacro:property name="link4_ixy" value="0.0"/>
+            <xacro:property name="link4_ixz" value="0.0"/>
+            <xacro:property name="link4_iyy" value="0.00001"/>
+            <xacro:property name="link4_iyz" value="0.0"/>
+            <xacro:property name="link4_izz" value="0.00001"/>
+<!--碰撞属性 偏移是按照左上腿做的-->
+    <!--机体 默认盒子 长宽高-->
+        <xacro:property name="collision_body_length" value="0.256"/>
+        <xacro:property name="collision_body_width" value="0.256"/>
+        <xacro:property name="collision_body_height" value="0.118"/>
+    <!--link1 默认一个圆柱 长度 半径-->
+        <xacro:property name="collision_link1_length" value="0.06"/>
+        <xacro:property name="collision_link1_radius" value="0.038"/>
+        <xacro:property name="collision_link1_offest_y" value="-0.033"/>
+    <!--link2 默认一个圆柱(长度 半径) 一个box（长宽高）-->
+        <xacro:property name="collision_link2_length1" value="0.117"/>
+        <xacro:property name="collision_link2_radius" value="0.038"/>
+        <xacro:property name="collision_link2_offest_y" value="-0.036"/>
+
+        <xacro:property name="collision_link2_length2" value="0.165"/>
+        <xacro:property name="collision_link2_width" value="0.04"/>
+        <xacro:property name="collision_link2_height" value="0.06"/>
+        <xacro:property name="collision_link2_offest_z" value="-0.125"/>
+    <!--link3 默认一个圆柱 长度 半径-->
+        <xacro:property name="collision_link3_length" value="0.21"/>
+        <xacro:property name="collision_link3_radius" value="0.019"/>
+        <xacro:property name="collision_link3_offest_z" value="-0.105"/>
+    <!--link4 默认一个球 半径-->
+        <xacro:property name="collision_link4_radius" value="0.018"/>
+
+</robot>

@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot">
+
+<!--模型部分-->
+    <!--虚拟关节-->
+        <link name="dummy_link">
+            <!-- 虚拟链接不需要惯性参数 -->
+        </link>
+        <joint name="dummy_to_base" type="fixed">
+            <parent link="dummy_link"/>
+            <child link="base_link"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </joint>
+    <!--模型-->
+        <xacro:include filename="$(find robot_description)/robot/urdf/Combination.xacro"/>
+<!--gazebo仿真部分-->
+    <xacro:include filename="$(find robot_description)/robot/urdf/sensor_gazebo.xacro"/>
+    <!--imu-->
+        <xacro:imu_gazebo imu_name="imu_link" connected_to="base_link"/>
+    <!--motor-->
+        <xacro:motor_gazebo />
+    <!--作弊里程计-->
+        <gazebo>
+            <plugin name="ground_truth_odometry" filename="libgazebo_ros_p3d.so">
+                <alwaysOn>true</alwaysOn>
+                <updateRate>500.0</updateRate>
+                <bodyName>base_link</bodyName>
+                <topicName>odom</topicName>
+                <gaussianNoise>0.01</gaussianNoise>
+                <frameName>world</frameName>
+                    <!-- initialize odometry for fake localization-->
+                <xyzOffsets>0 0 0</xyzOffsets>
+                <rpyOffsets>0 0 0</rpyOffsets>
+            </plugin>
+        </gazebo>
+</robot>

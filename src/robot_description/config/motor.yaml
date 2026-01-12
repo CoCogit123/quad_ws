@@ -1,0 +1,56 @@
+dog_controllers:
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 2000  
+ 
+  # effort Controllers ---------------------------------------
+  leg1_1:
+    type: effort_controllers/JointEffortController
+    joint: leg1_joint1
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg1_2:
+    type: effort_controllers/JointEffortController
+    joint: leg1_joint2
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg1_3:
+    type: effort_controllers/JointEffortController
+    joint: leg1_joint3
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg2_1:
+    type: effort_controllers/JointEffortController
+    joint: leg2_joint1
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg2_2:
+    type: effort_controllers/JointEffortController
+    joint: leg2_joint2
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg2_3:
+    type: effort_controllers/JointEffortController
+    joint: leg2_joint3
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg3_1:
+    type: effort_controllers/JointEffortController
+    joint: leg3_joint1
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg3_2:
+    type: effort_controllers/JointEffortController
+    joint: leg3_joint2
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg3_3:
+    type: effort_controllers/JointEffortController
+    joint: leg3_joint3
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg4_1:
+    type: effort_controllers/JointEffortController
+    joint: leg4_joint1
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg4_2:
+    type: effort_controllers/JointEffortController
+    joint: leg4_joint2
+    pid:    {p: 300, i: 0.0, d: 10}
+  leg4_3:
+    type: effort_controllers/JointEffortController
+    joint: leg4_joint3
+    pid:    {p: 300, i: 0.0, d: 10}
+    

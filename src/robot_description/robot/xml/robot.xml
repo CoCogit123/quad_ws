@@ -1,0 +1,260 @@
+<mujoco model="robot_model">
+    <!--指定路径-->
+    <compiler angle="radian" meshdir="../meshes/"/>
+    <size njmax="500" nconmax="100" />
+    <!--设置碰撞锥体为椭圆型； 冲量比例系数； 仿真时间步长-->
+    <option gravity='0 0 -9.806' iterations='50' solver='Newton' timestep='0.001'/>
+
+    <!--默认参数配置 配置了碰撞的参数 电机的数据-->
+    <default>
+        <!--全局类-->
+        <default class="robot">
+        <geom friction="0.4" margin="0.001" condim="1"/> <!--滑动摩擦系数 碰撞检测的最小距离 接触条件维度-->
+        <joint axis="0 1 0" damping="0.17" armature="0.01" frictionloss="0.2"/>  <!--基础关节轴，阻尼，电枢，摩擦损失-->
+        <motor ctrlrange="-36 36"/> <!--默认电机控制范围为 - 20 到 20 扭矩单位-->
+        <!--子类 第一关节-->
+        <default class="abduction">
+            <joint axis="1 0 0" range="-3.14 3.14"/>
+        </default>
+        <!--子类 第二关节-->
+        <default class="hip">
+            <default class="front_hip"> <joint range="-3.14 3.14"/> </default>
+            <default class="back_hip" > <joint range="-3.14 3.14"/> </default>
+        </default>
+        <!--子类 第三关节-->
+        <default class="knee">
+            <joint range="-3.14 3.14"/>
+        </default>
+        <!--视觉 不参与碰撞检测-->
+        <default class="visual">
+            <geom type="mesh" contype="0" conaffinity="0" group="2"/> 
+        </default>
+        <!--碰撞 参与检测-->
+        <default class="collision">
+            <geom group="3"/> <!---->
+            <default class="foot">
+            <geom size="0.018" priority="1" condim="6" friction="0.4 0.02 0.01"/> <!--球体半径 相对于父刚体的位置 接触条件维度 全维度摩擦-->
+            </default>
+        </default>
+        </default>
+    </default>
+
+    <asset>
+        <material name="color_body" rgba="0.17 0.17 0.17 1" specular="0.2" shininess="5"/>
+        <material name="color_link1" rgba="0.95 0.95 0.93 1" /> 
+        <material name="color_link2" rgba="0.82 0.84 0.85 1" specular="0.4" shininess="20"/> 
+        <material name="color_link3" rgba="0.3 0.3 0.3 1" specular="0.05" shininess="2"/> <!--灰色-->
+        <material name="color_link4" rgba="0.05 0.05 0.05 1" specular="0.0" shininess="1"/> <!--灰色-->
+
+        <mesh name="base_link" file="base_link.STL"/>
+        <mesh name="leg1_link1" file="leg1_link1.STL"/>
+        <mesh name="leg1_link2" file="leg1_link2.STL"/>
+        <mesh name="leg1_link3" file="leg1_link3.STL"/>
+        <mesh name="leg1_link4" file="leg1_link4.STL"/>
+        <mesh name="leg2_link1" file="leg2_link1.STL"/>
+        <mesh name="leg2_link2" file="leg2_link2.STL"/>
+        <mesh name="leg2_link3" file="leg2_link3.STL"/>
+        <mesh name="leg2_link4" file="leg2_link4.STL"/>
+        <mesh name="leg3_link1" file="leg3_link1.STL"/>
+        <mesh name="leg3_link2" file="leg3_link2.STL"/>
+        <mesh name="leg3_link3" file="leg3_link3.STL"/>
+        <mesh name="leg3_link4" file="leg3_link4.STL"/>
+        <mesh name="leg4_link1" file="leg4_link1.STL"/>
+        <mesh name="leg4_link2" file="leg4_link2.STL"/>
+        <mesh name="leg4_link3" file="leg4_link3.STL"/>
+        <mesh name="leg4_link4" file="leg4_link4.STL"/>
+    </asset>
+    
+    <!--机器人结构配置-->
+    <worldbody>
+        <!--机体-->
+        <body name="base_link" pos="0 0 0.12" childclass="robot"> 
+            <inertial pos="0.00015 0.00075 -0.00400" quat="0.0 0.0 0.0 1.0" mass="1.73" diaginertia="0.0144799 0.0193300 0.0274701"/>  <!--惯性矩阵 转动惯量 要改-->
+            <freejoint /> <!--允许六自由度运动-->
+            <geom mesh="base_link" material="color_body" class="visual" /> <!--可视化-->
+            <geom size="0.128 0.128 0.059" type="box" class="collision" /> <!--碰撞 要改-->
+            <site name="imu" pos="0 0 0" /> <!--用于 IMU 传感器的参考点，位置与基础体重合-->
+
+            <!--都是修改三处 相对位置 惯性等参数 碰撞-->
+            <!--leg1_link1-->
+            <body name="leg1_link1" pos="0.177 -0.0755 0"> <!--相对基体位置 要改 可从导出得复制-->
+                <inertial pos="-0.00461 0.02471 0.00019" quat="0.28679 0.646337 -0.28679 0.646337" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/> <!--惯性矩阵 转动惯量 要改 可复制-->
+                <joint name="leg1_1_joint" class="abduction"/> <!--关节连接 第一电机-->
+                <geom  mesh="leg1_link1" material="color_link1" class="visual" /><!--可视化-->
+                <geom size="0.038 0.03" pos="0 0.033 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision" /> <!--碰撞 要改 可复制-->
+                <!--leg1_link2-->
+                <body name="leg1_link2" pos="0 -0.0993 0">
+                    <inertial pos="-0.00238 0.02441 -0.04244" quat="0.981879 0.109326 -0.0415327 0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/><!--惯性矩阵 转动惯量 要改-->
+                    <joint name="leg1_2_joint" class="front_hip"/> <!--关节连接 第二电机-->
+                    <geom  mesh="leg1_link2" material="color_link2" class="visual" /><!--可视化-->
+                    <geom size="0.038 0.0585" pos="0 0.036 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision"/><!--碰撞-->
+                    <geom size="0.086 0.02 0.03" pos="0 0 -0.125" quat="0.707388 0 0.706825 0" type="box" class="collision"/><!--碰撞-->
+                    <!--leg1_link3-->
+                    <body name="leg1_link3" pos="0 0 -0.21">
+                        <inertial pos="0.00353064 0 -0.103181" quat="0.999797 0 0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/><!--惯性矩阵 转动惯量 要改-->
+                        <joint name="leg1_3_joint" class="knee"/> <!--关节连接 第二电机-->
+                        <geom  mesh="leg1_link3" quat="1 0 0 0" material="color_link3" class="visual" /><!--可视化-->
+                        <geom size="0.019 0.105" pos="0 0 -0.105" type="cylinder" class="collision"/><!--碰撞-->
+                        <!--leg1_link4-->
+                        <body name="leg1_link4" pos="0 0 -0.21" >
+                            <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg1_link4"/> <!--可视化-->
+                            <geom name="leg1_link4" class="foot" /><!--碰撞-->
+                        </body>    
+                    </body>
+                </body>
+            </body>
+
+            <!--leg2_link1-->
+            <body name="leg2_link1" pos="0.177 0.0755 0"><!--相对基体位置-->
+                <inertial pos="-0.00461 -0.02471 0.00019" quat="0.646337 0.28679 -0.646337 0.28679" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/> <!--惯性矩阵 转动惯量 要改-->
+                <joint name="leg2_1_joint" class="abduction"/> <!--关节连接 第一电机-->
+                <geom  mesh="leg2_link1" material="color_link1" class="visual" /><!--可视化-->
+                <geom size="0.038 0.03" pos="0 -0.033 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision" /> <!--碰撞-->
+                <!--leg2_link2-->
+                <body name="leg2_link2" pos="0 0.0993 0">
+                    <inertial pos="-0.00238 -0.02441 -0.04244" quat="0.981879 -0.109326 -0.0415327 -0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/><!--惯性矩阵 转动惯量 要改-->
+                    <joint name="leg2_2_joint" class="front_hip"/> <!--关节连接 第二电机-->
+                    <geom  mesh="leg2_link2" material="color_link2" class="visual" /><!--可视化-->
+                    <geom size="0.038 0.0585" pos="0 -0.036 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision"/><!--碰撞-->
+                    <geom size="0.086 0.02 0.03" pos="0 0 -0.125" quat="0.707388 0 0.706825 0" type="box" class="collision"/><!--碰撞-->
+                    <!--leg2_link3-->
+                    <body name="leg2_link3" pos="0 0 -0.21">
+                        <inertial pos="0.00353064 0 -0.103181" quat="0.999797 0 0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/><!--惯性矩阵 转动惯量 要改-->
+                        <joint name="leg2_3_joint" class="knee"/> <!--关节连接 第二电机-->
+                        <geom  mesh="leg2_link3" quat="1 0 0 0" material="color_link3" class="visual" /><!--可视化-->
+                        <geom size="0.019 0.105" pos="0 0 -0.105" type="cylinder" class="collision"/><!--碰撞-->
+                        <!--leg2_link4-->
+                        <body name="leg2_link4" pos="0 0 -0.21" >
+                            <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg2_link4"/> <!--可视化-->
+                            <geom name="leg2_link4" class="foot" /><!--碰撞-->
+                        </body>    
+                    </body>
+                </body>
+            </body>
+
+            <!--leg3_link1-->
+            <body name="leg3_link1" pos="-0.177 -0.0755 0"> <!--相对基体位置-->
+                <inertial pos="0.00461 0.02471 0.00019" quat="0.646337 0.28679 -0.646337 0.28679" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/> <!--惯性矩阵 转动惯量 要改-->
+                <joint name="leg3_1_joint" class="abduction"/> <!--关节连接 第一电机-->
+                <geom  mesh="leg3_link1" material="color_link1" class="visual" /><!--可视化-->
+                <geom size="0.038 0.03" pos="0 0.033 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision" /> <!--碰撞-->
+                <!--leg3_link2-->
+                <body name="leg3_link2" pos="0 -0.0993 0">
+                    <inertial pos="0.00238 0.02441 -0.04244" quat="0.981879 0.109326 0.0415327 -0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/><!--惯性矩阵 转动惯量 要改-->
+                    <joint name="leg3_2_joint" class="front_hip"/> <!--关节连接 第二电机-->
+                    <geom  mesh="leg3_link2" material="color_link2" class="visual" /><!--可视化-->
+                    <geom size="0.038 0.0585" pos="0 0.036 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision"/><!--碰撞-->
+                   <geom size="0.086 0.02 0.03" pos="0 0 -0.125" quat="0.707388 0 0.706825 0" type="box" class="collision"/><!--碰撞-->
+                    <!--leg3_link3-->
+                    <body name="leg3_link3" pos="0 0 -0.21">
+                        <inertial pos="-0.00353064 0 -0.103181" quat="0.999797 0 -0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/><!--惯性矩阵 转动惯量 要改-->
+                        <joint name="leg3_3_joint" class="knee"/> <!--关节连接 第二电机-->
+                        <geom  mesh="leg3_link3" quat="1 0 0 0" material="color_link3" class="visual" /><!--可视化-->
+                        <geom size="0.019 0.105" pos="0 0 -0.105" type="cylinder" class="collision"/><!--碰撞-->
+                        <!--leg3_link4-->
+                        <body name="leg3_link4" pos="0 0 -0.21" >
+                            <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg3_link4"/> <!--可视化-->
+                            <geom name="leg3_link4" class="foot" /><!--碰撞-->
+                        </body>    
+                    </body>
+                </body>
+            </body>
+
+            <!--leg4_link1-->
+            <body name="leg4_link1" pos="-0.177 0.0755 0"> <!--相对基体位置-->
+                <inertial pos="0.00461 -0.02471 0.00019" quat="0.28679 0.646337 -0.28679 0.646337" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/> <!--惯性矩阵 转动惯量 要改-->
+                <joint name="leg4_1_joint" class="abduction"/> <!--关节连接 第一电机-->
+                <geom  mesh="leg4_link1" material="color_link1" class="visual" /><!--可视化-->
+                <geom size="0.038 0.03" pos="0 -0.033 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision" /> <!--碰撞-->
+                <!--leg4_link2-->
+                <body name="leg4_link2" pos="0 0.0993 0">
+                    <inertial pos="0.00238 -0.02441 -0.04244" quat="0.981879 -0.109326 0.0415327 0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/><!--惯性矩阵 转动惯量 要改-->
+                    <joint name="leg4_2_joint" class="front_hip"/> <!--关节连接 第二电机-->
+                    <geom  mesh="leg4_link2" material="color_link2" class="visual" /><!--可视化-->
+                    <geom size="0.038 0.0585" pos="0 -0.036 0" quat="0.707388 0.706825 0 0" type="cylinder" class="collision"/><!--碰撞-->
+                    <geom size="0.086 0.02 0.03" pos="0 0 -0.125" quat="0.707388 0 0.706825 0" type="box" class="collision"/><!--碰撞-->
+                    <!--leg4_link3-->
+                    <body name="leg4_link3" pos="0 0 -0.21">
+                        <inertial pos="-0.00353064 0 -0.103181" quat="0.999797 0 -0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/><!--惯性矩阵 转动惯量 要改-->
+                        <joint name="leg4_3_joint" class="knee"/> <!--关节连接 第二电机-->
+                        <geom  mesh="leg4_link3" quat="1 0 0 0" material="color_link3" class="visual" /><!--可视化-->
+                        <geom size="0.019 0.105" pos="0 0 -0.105" type="cylinder" class="collision"/><!--碰撞-->
+                        <!--leg4_link4-->
+                        <body name="leg4_link4" pos="0 0 -0.21" >
+                            <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg4_link4"/> <!--可视化-->
+                            <geom name="leg4_link4" class="foot" /><!--碰撞-->
+                        </body>    
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <!--电机-->
+    <actuator>
+            <motor name="leg1_1"  joint="leg1_1_joint" />
+            <motor name="leg1_2"  joint="leg1_2_joint" />
+            <motor name="leg1_3"  joint="leg1_3_joint" />
+            <motor name="leg2_1"  joint="leg2_1_joint" />
+            <motor name="leg2_2"  joint="leg2_2_joint" />
+            <motor name="leg2_3"  joint="leg2_3_joint" />
+            <motor name="leg3_1"  joint="leg3_1_joint" />
+            <motor name="leg3_2"  joint="leg3_2_joint" />
+            <motor name="leg3_3"  joint="leg3_3_joint" />
+            <motor name="leg4_1"  joint="leg4_1_joint" />
+            <motor name="leg4_2"  joint="leg4_2_joint" />
+            <motor name="leg4_3"  joint="leg4_3_joint" />
+    </actuator>
+
+    <!--电机位置速度力矩传感器 imu传感器 基体位置速度传感器-->
+    <sensor>
+        <jointpos name="leg1_1_p"  joint="leg1_1_joint" />
+        <jointpos name="leg1_2_p"  joint="leg1_2_joint" />
+        <jointpos name="leg1_3_p"  joint="leg1_3_joint" />
+        <jointpos name="leg2_1_p"  joint="leg2_1_joint" />
+        <jointpos name="leg2_2_p"  joint="leg2_2_joint" />
+        <jointpos name="leg2_3_p"  joint="leg2_3_joint" />
+        <jointpos name="leg3_1_p"  joint="leg3_1_joint" />
+        <jointpos name="leg3_2_p"  joint="leg3_2_joint" />
+        <jointpos name="leg3_3_p"  joint="leg3_3_joint" />
+        <jointpos name="leg4_1_p"  joint="leg4_1_joint" />
+        <jointpos name="leg4_2_p"  joint="leg4_2_joint" />
+        <jointpos name="leg4_3_p"  joint="leg4_3_joint" />
+
+        <jointvel name="leg1_1_v"  joint="leg1_1_joint" />
+        <jointvel name="leg1_2_v"  joint="leg1_2_joint" />
+        <jointvel name="leg1_3_v"  joint="leg1_3_joint" />
+        <jointvel name="leg2_1_v"  joint="leg2_1_joint" />
+        <jointvel name="leg2_2_v"  joint="leg2_2_joint" />
+        <jointvel name="leg2_3_v"  joint="leg2_3_joint" />
+        <jointvel name="leg3_1_v"  joint="leg3_1_joint" />
+        <jointvel name="leg3_2_v"  joint="leg3_2_joint" />
+        <jointvel name="leg3_3_v"  joint="leg3_3_joint" />
+        <jointvel name="leg4_1_v"  joint="leg4_1_joint" />
+        <jointvel name="leg4_2_v"  joint="leg4_2_joint" />
+        <jointvel name="leg4_3_v"  joint="leg4_3_joint" />
+
+        <framequat      name="imu_quat" objtype="site" objname="imu" />
+        <gyro           name="imu_gyro" site="imu" />
+        <accelerometer  name="imu_acc"  site="imu" />
+        
+        <framepos    name="frame_pos" objtype="site" objname="imu" />
+        <framelinvel name="frame_vel" objtype="site" objname="imu" />
+    </sensor>   
+
+    <!--初始状态 初始高度 和 四元数 四条腿电机角度-->
+    <keyframe>
+        <key name="home" 
+        qpos="0 0 0.1 
+                1 0 0 0 
+                0 1.221 -2.777 
+                0 1.221 -2.777 
+                0 1.221 -2.777
+                0 1.221 -2.777 "
+        ctrl="  0 1.221 -2.777 
+                0 1.221 -2.777 
+                0 1.221 -2.777
+                0 1.221 -2.777 " />
+    </keyframe>
+
+</mujoco>

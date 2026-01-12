@@ -1,0 +1,260 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<xacro:macro name="leg" params="name mirror_x mirror_y">
+    <!--joint1-->
+    <joint
+        name="${name}_joint1"
+        type="revolute">
+        <!--两个坐标系（link）的相对偏移-->
+        <origin
+            xyz="${joint1_offest_x*mirror_y} ${joint1_offest_y*mirror_x} ${joint1_offest_z}"
+            rpy="${joint1_offest_init*mirror_x} 0 0" />
+        <parent link="base_link" />
+        <child link="${name}_link1" />
+        <axis xyz="1 0 0" />
+        <dynamics damping="${motor1_damping}" friction="${motor1_friction}"/>
+        <limit effort="${motor1_torque}" velocity="${motor1_vel}" lower="${joint1_lb}" upper="${joint1_ub}" />
+    </joint>
+    <!--link1-->
+    <link
+        name="${name}_link1">
+        <!--质心偏移-->
+        <inertial>
+            <origin
+                xyz="${link1_com_x*mirror_y} ${link1_com_y*mirror_x} ${link1_com_z}"
+                rpy="0 0 0" />
+            <mass
+                value="${link1_mass}" />
+            <inertia
+                ixx="${link1_ixx}"
+                ixy="${link1_ixy*mirror_y*mirror_x}"
+                ixz="${link1_ixz*mirror_y}"
+                iyy="${link1_iyy}"
+                iyz="${link1_iyz*mirror_x}"
+                izz="${link1_izz}" />
+        </inertial>
+        <visual>
+            <origin
+                xyz="0 0 0"
+                rpy="0 0 0" />
+            <geometry>
+                <mesh
+                filename="${meshes_dir}/${name}_link1.STL" />
+            </geometry>
+            <material name="link_1_material"/>
+        </visual>
+        <collision>
+            <origin
+                xyz="0 ${collision_link1_offest_y*mirror_x} 0"
+                rpy="1.57 0 0" />
+            <geometry>
+                <cylinder length="${collision_link1_length}" radius="${collision_link1_radius}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--joint2-->
+    <joint
+        name="${name}_joint2"
+        type="revolute">
+        <!--两个坐标系（link）的相对偏移-->
+        <origin
+            xyz="${joint2_offest_x*mirror_y} ${joint2_offest_y*mirror_x} ${joint2_offest_z}"
+            rpy="0 ${joint2_offest_init} 0" />
+        <parent link="${name}_link1" />
+        <child link="${name}_link2" />
+        <axis xyz="0 1 0" />
+        <dynamics damping="${motor1_damping}" friction="${motor1_friction}"/>
+        <limit effort="${motor1_torque}" velocity="${motor1_vel}" lower="${joint2_lb}" upper="${joint2_ub}" />
+    </joint>
+    <!--link2-->
+    <link
+        name="${name}_link2">
+        <!--质心偏移-->
+        <inertial>
+            <origin
+                xyz="${link2_com_x*mirror_y} ${link2_com_y*mirror_x} ${link2_com_z}"
+                rpy="0 0 0" />
+            <mass
+                value="${link2_mass}" />
+            <inertia
+                ixx="${link2_ixx}"
+                ixy="${link2_ixy*mirror_y*mirror_x}"
+                ixz="${link2_ixz*mirror_y}"
+                iyy="${link2_iyy}"
+                iyz="${link2_iyz*mirror_x}"
+                izz="${link2_izz}" />
+        </inertial>
+        <visual>
+            <origin
+                xyz="0 0 0"
+                rpy="0 0 0" />
+            <geometry>
+                <mesh
+                filename="${meshes_dir}/${name}_link2.STL" />
+            </geometry>
+            <material name="link_2_material"/>
+        </visual>
+        <!--圆柱和盒子组合-->
+        <collision>
+            <origin
+                xyz="0 ${collision_link2_offest_y*mirror_x} 0" rpy="1.57 0 0" />
+            <geometry>
+                <cylinder length="${collision_link2_length1}" radius="${collision_link2_radius}"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin
+                xyz="0 0 ${collision_link2_offest_z}" rpy="0 1.57 0" />
+            <geometry>
+                <box size="${collision_link2_length2} ${collision_link2_width} ${collision_link2_height}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--joint3-->
+    <joint
+        name="${name}_joint3"
+        type="revolute">
+        <!--两个坐标系（link）的相对偏移-->
+        <origin
+            xyz="${joint3_offest_x*mirror_y} ${joint3_offest_y*mirror_x} ${joint3_offest_z}"
+            rpy="0 ${joint3_offest_init} 0" />
+        <parent link="${name}_link2" />
+        <child link="${name}_link3" />
+        <axis xyz="0 1 0" />
+        <dynamics damping="${motor2_damping}" friction="${motor2_friction}"/>
+        <limit effort="${motor2_torque}" velocity="${motor2_vel}" lower="${joint3_lb}" upper="${joint3_ub}" />
+    </joint>
+    <!--link3-->
+    <link
+        name="${name}_link3">
+        <!--质心偏移-->
+        <inertial>
+            <origin
+                xyz="${link3_com_x*mirror_y} ${link3_com_y*mirror_x} ${link3_com_z}"
+                rpy="0 0 0" />
+            <mass
+                value="${link3_mass}" />
+            <inertia
+                ixx="${link3_ixx}"
+                ixy="${link3_ixy*mirror_y*mirror_x}"
+                ixz="${link3_ixz*mirror_y}"
+                iyy="${link3_iyy}"
+                iyz="${link3_iyz*mirror_x}"
+                izz="${link3_izz}" />
+        </inertial>
+        <visual>
+            <origin
+                xyz="0 0 0"
+                rpy="0 0 0" />
+            <geometry>
+                <mesh
+                filename="${meshes_dir}/${name}_link3.STL" />
+            </geometry>
+            <material name="link_3_material"/>
+        </visual>
+        <collision>
+            <origin
+                xyz="0 0 ${collision_link3_offest_z}"
+                rpy="0 0 0" />
+            <geometry>
+                <cylinder length="${collision_link3_length}" radius="${collision_link3_radius}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--joint4-->
+    <joint
+        name="${name}_joint4"
+        type="fixed">
+        <!--两个坐标系（link）的相对偏移-->
+        <origin
+            xyz="${joint4_offest_x*mirror_y} ${joint4_offest_y*mirror_x} ${joint4_offest_z}"
+            rpy="0 0 0" />
+        <parent link="${name}_link3" />
+        <child link="${name}_link4" />
+        <axis xyz="0 0 0" />
+        <!-- <dynamics damping="0 friction="0"/>
+        <limit effort="0" velocity="0" lower="0" upper="0" /> -->
+    </joint>
+    <!--link4-->
+    <link
+        name="${name}_link4">
+        <!--质心偏移-->
+        <inertial>
+            <origin
+                xyz="${link4_com_x*mirror_y} ${link4_com_y*mirror_x} ${link4_com_z}"
+                rpy="0 0 0" />
+            <mass
+                value="${link4_mass}" />
+            <inertia
+                ixx="${link4_ixx}"
+                ixy="${link4_ixy*mirror_y*mirror_x}"
+                ixz="${link4_ixz*mirror_y}"
+                iyy="${link4_iyy}"
+                iyz="${link4_iyz*mirror_x}"
+                izz="${link4_izz}" />
+        </inertial>
+        <visual>
+            <origin
+                xyz="0 0 0"
+                rpy="0 0 0" />
+            <geometry>
+                <mesh
+                filename="${meshes_dir}/${name}_link4.STL" />
+            </geometry>
+            <material name="link_4_material"/>
+        </visual>
+        <collision>
+            <origin
+                xyz="0 0 0"
+                rpy="0 0 0" />
+            <geometry>
+                <sphere radius="${collision_link4_radius}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- 指定执行机构 -->
+    <!--motor1-->
+    <transmission name="${name}_joint1_tran">
+        <!--指定传动类型-->
+        <type>transmission_interface/SimpleTransmission</type>
+        <!--传动系统所连接的关节-->
+        <joint name="${name}_joint1">
+            <!--硬件接口-->
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <!--执行器名称-->
+        <actuator name="${name}_joint1_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <!--减速比-->
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <!--motor2-->
+    <transmission name="${name}_joint2_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="${name}_joint2">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="${name}_joint2_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <!--motor3-->
+    <transmission name="${name}_joint3_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="${name}_joint3">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="${name}_joint3_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+</xacro:macro>
+</robot>

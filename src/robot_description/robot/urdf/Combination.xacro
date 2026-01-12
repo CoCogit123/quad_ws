@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot">
+<!--机器人描述-->
+    <!--通用描述参数-->
+        <xacro:include filename="$(find robot_description)/robot/urdf/robot_param.xacro"/>
+    <!-- 定义颜色材料 -->
+            <material name="body_material">
+                <color rgba="0.17 0.17 0.17 1"/>
+            </material>
+            <material name="link_1_material">
+                <color rgba="0.95 0.95 0.93 1"/>
+            </material>
+            <material name="link_2_material">
+                <color rgba="0.82 0.84 0.85 1"/>
+            </material>
+            <material name="link_3_material">
+                <color rgba="0.3 0.3 0.3 1"/>
+            </material>
+            <material name="link_4_material">
+                <color rgba="0.05 0.05 0.05 1"/>
+            </material>
+    <!--身体部分body-->
+        <link
+            name="base_link">
+            <!--惯性矩阵-->
+            <inertial>
+                <origin
+                    xyz="${body_com_x} ${body_com_y} ${body_com_z}"
+                    rpy="0 0 0" />
+                <mass
+                    value="${body_mass}" />
+                <inertia
+                    ixx="${body_ixx}"
+                    ixy="${body_ixy}"
+                    ixz="${body_ixz}"
+                    iyy="${body_iyy}"
+                    iyz="${body_iyz}"
+                    izz="${body_izz}" />
+            </inertial>
+            <!--可视化-->
+            <visual>
+                <origin
+                    xyz="0 0 0"
+                    rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${meshes_dir}/base_link.STL" />
+                </geometry>
+                <material name="body_material"/>
+            </visual>
+            <!--碰撞-->
+            <collision>
+                <origin
+                    xyz="0 0 0"
+                    rpy="0 0 0" />
+                <geometry>
+                    <box size="${collision_body_length} ${collision_body_width} ${collision_body_height}"/>
+                </geometry>
+            </collision>
+        </link>
+    <!--腿部分leg-->
+        <xacro:include filename="$(find robot_description)/robot/urdf/leg.xacro"/>
+        <xacro:leg name="leg1" mirror_x="-1" mirror_y="1"/>
+        <xacro:leg name="leg2" mirror_x="1" mirror_y="1"/>
+        <xacro:leg name="leg3" mirror_x="-1" mirror_y="-1"/>
+        <xacro:leg name="leg4" mirror_x="1" mirror_y="-1"/>
+    <!--imu-->
+        <!-- Imu joint -->
+            <joint name="imu_joint" type="fixed">
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <parent link="base_link"/>
+                <child link="imu_link"/>
+            </joint>
+        <!-- Imu link -->
+            <link name="imu_link">
+                <!-- 材料 -->
+                <inertial>
+                    <mass value="0.01"/>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                    <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+                </inertial>
+                <!-- 可视化 -->
+                <visual>
+                    <origin rpy="0 0 0" xyz="0 0 0"/>
+                    <geometry>
+                        <box size="0.015 0.015 0.004"/>
+                    </geometry>
+                </visual>
+                <!-- 颜色 -->
+                <material name="orange">
+                    <color rgba="255 108 10 255"/>
+                </material>
+            </link>
+</robot>

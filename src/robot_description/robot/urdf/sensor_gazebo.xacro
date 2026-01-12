@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="sensor_gazebo">
+
+    <xacro:macro name="imu_gazebo" params="imu_name connected_to ">
+        <gazebo reference="${imu_name}">
+        <!-- 开启重力模拟 -->
+        <gravity>true</gravity>
+        <!-- IMU传感器定义 -->
+            <sensor name="${imu_name}" type="imu">
+            <!-- 传感器始终保持开启状态 -->
+            <always_on>true</always_on>
+            <!-- 传感器更新频率，单位为Hz -->
+            <update_rate>500</update_rate>
+            <!-- 是否在GAZEBO客户端中可视化该传感器 -->
+            <visualize>true</visualize>
+            <!-- 传感器数据发布的ROS话题名，这里使用默认话题 -->
+            <topic>__default_topic__</topic>
+            <!-- 插件配置 -->
+            <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+                <!-- 插件发布的IMU数据话题名 -->
+                <topicName>imu</topicName>
+                <!-- IMU传感器附加到的机器人身体部分的名称 -->
+                <bodyName>${connected_to}</bodyName>
+                <!-- 插件的更新频率，单位为Hz -->
+                <updateRateHZ>500.0</updateRateHZ>
+                <!-- 传感器数据的高斯噪声，这里设置为0表示无噪声 -->
+                <gaussianNoise>0.0</gaussianNoise>
+                <!-- 传感器在机器人身体上的位置偏移，单位是米 -->
+                <xyzOffset>0 0 0</xyzOffset>
+                <!-- 传感器在机器人身体上的姿态偏移-->
+                <rpyOffset>0 0 0</rpyOffset>
+                <!-- 传感器所在的坐标系或框架的名称 -->
+                <frameName>${imu_name}</frameName>
+            </plugin>
+            <!-- 传感器在机器人身体上的初始姿态，以（x, y, z, roll, pitch, yaw）表示 -->
+            <pose>0 0 0 0 0 0</pose>
+            </sensor>
+        </gazebo>
+    </xacro:macro>
+
+    <xacro:macro name="motor_gazebo">
+        <gazebo>
+            <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+                <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+            </plugin>
+        </gazebo>
+    </xacro:macro>
+
+</robot>
