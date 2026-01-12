@@ -2,3 +2,4 @@
 float64 run_time #单位为秒
 geometry_msgs/Point sim_pos
 geometry_msgs/Quaternion sim_quat
+geometry_msgs/Twist sim_twist #机体坐标系下的线速度和角速度集合

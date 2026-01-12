@@ -4,7 +4,7 @@
 #include <iostream>
 #include <sensor_msgs/JointState.h>
 #include <rosgraph_msgs/Clock.h> //gazebo/clock
-
+#include <nav_msgs/Odometry.h>
 //消息包
 #include <custom_msgs/Motor_state.h>
 #include <custom_msgs/Motor_control.h>
@@ -30,23 +30,23 @@ void msgs_init()
     Motor_control_msgs.pos.resize(12);
     Motor_control_msgs.vel.resize(12);
 }
+//接收到的控制电机的数据
 void motor_control_callback(const custom_msgs::Motor_control &msg)
 {
     Motor_control_msgs=msg;
 }
-
-
 //gazebo回传电机数据
 void motor_rev_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
+    //以左上腿为基准
     static double leg1_offest=0.00;
-    static double leg2_offest=0.00;
-    static double leg3_offest=0.00;
+    static double leg2_offest=0.785;
+    static double leg3_offest=-2.355;
     std::memcpy(Motor_state_msgs.pos.data(), msg->position.data(), msg->position.size()* sizeof(double));
     std::memcpy(Motor_state_msgs.vel.data(), msg->velocity.data(), msg->velocity.size()* sizeof(double));
     std::memcpy(Motor_state_msgs.torque.data(), msg->effort.data(), msg->effort.size()* sizeof(double));
     //偏移回标准坐标系
-    Motor_state_msgs.pos[0]+=leg1_offest; Motor_state_msgs.pos[3]-=leg1_offest; Motor_state_msgs.pos[6]+=leg1_offest; Motor_state_msgs.pos[9]-=leg1_offest;
+    Motor_state_msgs.pos[0]-=leg1_offest; Motor_state_msgs.pos[3]+=leg1_offest; Motor_state_msgs.pos[6]-=leg1_offest; Motor_state_msgs.pos[9]-=leg1_offest;
     Motor_state_msgs.pos[1]+=leg2_offest; Motor_state_msgs.pos[4]+=leg2_offest; Motor_state_msgs.pos[7]+=leg2_offest; Motor_state_msgs.pos[10]+=leg2_offest;
     Motor_state_msgs.pos[2]+=leg3_offest; Motor_state_msgs.pos[5]+=leg3_offest; Motor_state_msgs.pos[8]+=leg3_offest; Motor_state_msgs.pos[11]+=leg3_offest;
 }
@@ -60,6 +60,24 @@ void clock_callback(const rosgraph_msgs::Clock::ConstPtr& msg)
     // 2. 转换为秒（double类型，包含小数部分）
     sim_time_sec = sim_time.toSec();   
 }
+//gazebo回传odom 并将数据存储到Sim_info_msgs中
+void odomCallback(const nav_msgs::Odometry::ConstPtr& msg)
+{
+    // 1. 读取并存储位置数据 (Position)
+    // msg->pose.pose 结构包含 position 和 orientation
+    Sim_info_msgs.sim_pos.x = msg->pose.pose.position.x;
+    Sim_info_msgs.sim_pos.y = msg->pose.pose.position.y;
+    Sim_info_msgs.sim_pos.z = msg->pose.pose.position.z;
+
+    // 2. 读取并存储四元数数据 (Quaternion)
+    Sim_info_msgs.sim_quat.x = msg->pose.pose.orientation.x;
+    Sim_info_msgs.sim_quat.y = msg->pose.pose.orientation.y;
+    Sim_info_msgs.sim_quat.z = msg->pose.pose.orientation.z;
+    Sim_info_msgs.sim_quat.w = msg->pose.pose.orientation.w;
+
+    //3.读取线速度和角速度 Twist
+    Sim_info_msgs.sim_twist = msg->twist.twist;
+}
 
 int main(int argc, char *argv[])
 {
@@ -71,6 +89,7 @@ int main(int argc, char *argv[])
     ros::Subscriber control_sub=nh.subscribe("/Motor_control",10,motor_control_callback);//接收控制电机数据
     ros::Publisher sim_info_pub =nh.advertise<custom_msgs::Sim_info>("/Sim_info",10);//发送出去sim_info
     ros::Subscriber clock_sub = nh.subscribe("/clock", 10, clock_callback);//订阅获取仿真时间
+    ros::Subscriber odom_sub = nh.subscribe("odom", 10, odomCallback);//订阅odom 作弊里程计
     /*********gazebo仿真要的***********/
     ros::Publisher cmd_pub[12];
     //初始化各个电机话题

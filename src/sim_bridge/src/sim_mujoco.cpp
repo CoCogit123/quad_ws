@@ -117,6 +117,14 @@ int main(int argc, char *argv[])
             Sim_info_msgs.sim_quat.y = mj_interface.baseQuat[1];
             Sim_info_msgs.sim_quat.z = mj_interface.baseQuat[2];
             Sim_info_msgs.sim_quat.w = mj_interface.baseQuat[3];
+
+            Sim_info_msgs.sim_twist.linear.x = mj_interface.baseLinVel[0];
+            Sim_info_msgs.sim_twist.linear.y = mj_interface.baseLinVel[1];
+            Sim_info_msgs.sim_twist.linear.z = mj_interface.baseLinVel[2];
+
+            Sim_info_msgs.sim_twist.angular.x = mj_interface.baseAngVel[0];
+            Sim_info_msgs.sim_twist.angular.y = mj_interface.baseAngVel[1];
+            Sim_info_msgs.sim_twist.angular.z = mj_interface.baseAngVel[2];
             sim_info_pub.publish(Sim_info_msgs);
             //imu
             sensor_msgs::Imu imu_msg;
