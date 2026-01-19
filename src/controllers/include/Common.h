@@ -14,6 +14,7 @@ namespace controllers {
     using Vector12d = Eigen::Matrix<double, 12, 1>;
     using Vector18d = Eigen::Matrix<double, 18, 1>;
     using Vector19d = Eigen::Matrix<double, 19, 1>; // Pinocchio中浮动基q是7维(4元数+3位置)
+    using Vector4i = Eigen::Vector4i; //int
     using Matrix3d = Eigen::Matrix3d;
     using Matrix3x4d = Eigen::Matrix<double, 3, 4>;
     using Matrix6x18d = Eigen::Matrix<double, 6, 18>;
@@ -71,7 +72,7 @@ namespace controllers {
         double mass;        // 机体总质量
         double mu;          // 摩擦系数
         
-        // 结构偏移 (通常从URDF读取，这里作为缓存)
+        // 结构偏移 (通常从URDF读取)
         double hx, hy, l1, l2, l3; 
 
         Matrix3d body_INERTIA;  // 惯性矩阵（机体系）
@@ -100,6 +101,71 @@ namespace controllers {
             }
             M_q.setZero();
             h_q_dq.setZero();
+        }
+    };
+    /**
+     * @brief 步态信息结构体
+     * 
+    */
+    //步态类型枚举
+    enum Gait_type {
+        none,
+        stand,
+        walk,
+        trot
+    };
+    struct Gait_info {
+        // ==========================================
+        // 1. 静态参数 (Configuration Parameters)
+        // ==========================================
+        
+        Gait_type Gait_mode;             // 当前运行步态类型
+        
+        double time_gait;               // 一个周期时长 (秒)
+        double time_swing;              //   摆动时长 (秒) 
+        double time_stand;              //   支撑时长 (秒)
+        
+        Vector4d Gait_ratio;     //   当前运行步态占空比 (Duty Cycle)
+        Vector4d Gait_offset;    //   当前运行步态相位偏移量 (Phase Offset)
+        
+        // 控制标志位
+        // [0]: 是否切换步态 (1=切换, 0=保持)
+        // [1]: 目标步态类型 (Gait_type)
+        int Gait_flag;      // 修改信号
+        Gait_type Gait_des; //期望修改模式
+
+        // ==========================================
+        // 2. 动态状态 (Runtime Variables)
+        // ==========================================
+        
+        int Gait_N;                 // 运行过几个周期
+        double time_gait_degree;        // 当前全局相位 [0, 1)
+        
+        Vector4i Gait_state;     // 每条腿的触地情况 (1=Stance, 0=Swing)
+        
+        Vector4d Time_swing_degree; // 当前摆动周期相位 [0, 1)
+        Vector4d Time_stand_degree; // 当前支撑周期相位 [0, 1)
+
+        // ==========================================
+        // 构造函数 (初始化防止崩溃)
+        // ==========================================
+        Gait_info() {
+            Gait_mode = none;
+            
+            time_gait = 0.5;
+            time_swing = 0.2;
+            time_stand = 0.3;
+            
+            Gait_ratio.setConstant(0.6);
+            Gait_offset.setZero();
+            Gait_flag = 0;
+            Gait_des = none;
+            
+            Gait_N = 0;
+            time_gait_degree = 0.0;
+            Gait_state.setOnes(); // 默认全站立
+            Time_swing_degree.setZero();
+            Time_stand_degree.setZero();
         }
     };
 

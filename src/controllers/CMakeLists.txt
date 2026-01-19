@@ -60,5 +60,9 @@ add_dependencies(test_dynamics ${catkin_EXPORTED_TARGETS})
 target_link_libraries(test_dynamics ${catkin_LIBRARIES})
 target_link_libraries(test_dynamics ${PINOCCHIO_LIBRARIES})
 
+add_executable(test_gait test/test_gait.cpp )
+add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
+target_link_libraries(test_gait ${catkin_LIBRARIES})
+
 
 
