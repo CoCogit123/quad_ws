@@ -55,9 +55,10 @@ include_directories(
 link_directories(${PINOCCHIO_LIBRARY_DIRS})
 
 #添加可执行程序
-add_executable(dynamics_test test/dynamics_test.cpp src/Dynamics.cpp  )
-add_dependencies(dynamics_test ${catkin_EXPORTED_TARGETS}) 
-target_link_libraries(dynamics_test ${catkin_LIBRARIES})
-target_link_libraries(dynamics_test ${PINOCCHIO_LIBRARIES})
+add_executable(test_dynamics test/test_dynamics.cpp )
+add_dependencies(test_dynamics ${catkin_EXPORTED_TARGETS}) 
+target_link_libraries(test_dynamics ${catkin_LIBRARIES})
+target_link_libraries(test_dynamics ${PINOCCHIO_LIBRARIES})
+
 
 
