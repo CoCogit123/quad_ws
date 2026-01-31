@@ -3,11 +3,11 @@
 
 namespace controllers{
 
-Eigen::Vector3d utils::quat_to_euler(Eigen::Quaterniond quat) {
-    Eigen::Vector3d rst;
+Vector3d utils::quat_to_euler(Eigen::Quaterniond quat) {
+    Vector3d rst;
 
     // order https://github.com/libigl/eigen/blob/master/Eigen/src/Geometry/Quaternion.h
-    Eigen::Matrix<double, 4, 1> coeff = quat.coeffs();
+    Vector4d coeff = quat.coeffs();
     double x = coeff(0);
     double y = coeff(1);
     double z = coeff(2);
@@ -30,36 +30,38 @@ Eigen::Vector3d utils::quat_to_euler(Eigen::Quaterniond quat) {
     rst[2] = atan2(t3, t4);
     return rst;
     }
-//zyx顺序
-Eigen::Matrix3d utils::euler_to_rot(Eigen::Vector3d euler)
+
+    //zyx顺序
+Matrix3d utils::euler_to_rot(Vector3d euler)
 {
-    Eigen::Matrix3d result;
+    Matrix3d result;
     double ts0,tc0, ts1,tc1, ts2,tc2;
     ts0 = std::sin(euler[0]); tc0 = std::cos(euler[0]);
     ts1 = std::sin(euler[1]); tc1 = std::cos(euler[1]);
     ts2 = std::sin(euler[2]); tc2 = std::cos(euler[2]);
-    Eigen::Matrix3d rot_yaw;
+    Matrix3d rot_yaw;
     rot_yaw <<  tc2, -ts2, 0,
                 ts2, tc2, 0,
                 0,   0,   1;
-    Eigen::Matrix3d rot_pitch;
+    Matrix3d rot_pitch;
     rot_pitch <<    tc1, 0, ts1,
                     0,  1,  0,
                     -ts1,  0, tc1;
-    Eigen::Matrix3d rot_roll;
+    Matrix3d rot_roll;
     rot_roll <<    1, 0, 0,
                     0,  tc0,  -ts0,
                     0,  ts0, tc0;
     result = rot_yaw * rot_pitch * rot_roll;
     return result;
 }
-Eigen::Vector3d utils::bezier_pos(Eigen::Vector3d start,Eigen::Vector3d end,double swing_high,double devel)
+
+Vector3d utils::bezier_pos(Vector3d start,Vector3d end,double swing_high,double devel)
 {
     double bezier_A;
     double bezier_B;
-    Eigen::Vector3d result;
+    Vector3d result;
     //pos
-    Eigen::Vector3d bezier_delta;
+    Vector3d bezier_delta;
     bezier_delta = end - start;
 
     bezier_A = std::pow(devel,3)+3*std::pow(devel,2)*(1-devel);
@@ -79,13 +81,13 @@ Eigen::Vector3d utils::bezier_pos(Eigen::Vector3d start,Eigen::Vector3d end,doub
     return result;
 }
 
-Eigen::Vector3d utils::bezier_vel(Eigen::Vector3d start,Eigen::Vector3d end,double swing_high,double devel)
+Vector3d utils::bezier_vel(Vector3d start,Vector3d end,double swing_high,double devel)
 {
     double bezier_C;
     double bezier_D;
-    Eigen::Vector3d result;
+    Vector3d result;
     //vel
-    Eigen::Vector3d bezier_delta;
+    Vector3d bezier_delta;
     bezier_delta = end - start;
 
     bezier_C = 6*devel*(1-devel);
@@ -105,9 +107,9 @@ Eigen::Vector3d utils::bezier_vel(Eigen::Vector3d start,Eigen::Vector3d end,doub
     return result;
 }
 
-Eigen::Matrix3d utils::skew(Eigen::Vector3d vec)
+Matrix3d utils::skew(Vector3d vec)
 {
-    Eigen::Matrix3d rst; rst.setZero();
+    Matrix3d rst; rst.setZero();
     rst <<            0, -vec(2),  vec(1),
             vec(2),             0, -vec(0),
             -vec(1),  vec(0),             0;

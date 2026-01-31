@@ -30,53 +30,58 @@ namespace controllers {
         // 1. 用户输入 (User Command) - 输入
         // ==========================================
 
-        Vector3d body_Vel_des;   // 期望线速度-机体系
-        Vector3d world_Vel_des;  // 期望线速度-世界系
-        Vector3d body_omega_des; // 期望角速度-机体系
-        Vector3d world_omega_des;// 期望角速度-世界系
+        Vector3d body_Vel_des;   // 期望线速度-机体系       **********遥控器输入*************
+        Vector3d world_Vel_des;  // 期望线速度-世界系       **********遥控器输入*************
+        Vector3d body_omega_des; // 期望角速度-机体系       **********遥控器输入*************
+        Vector3d world_omega_des;// 期望角速度-世界系       **********遥控器输入*************
+
+        double z_des = 0.3;//期望高度（速度累计来）         **********遥控器输入*************
+        Vector3d euler_des;//期望欧拉角（速度累计来）       **********遥控器输入*************
+
+        double p_x_offest = -0.01;//足端默认支撑时的x偏移量（左上腿为标准 ）**********配置参数*************
+        double p_y_offest = 0;//足端默认支撑时的y偏移量（左上腿为标准 ）    **********配置参数*************
 
         // ==========================================
         // 2. 传感器数据 (Sensors) - 输入
         // ==========================================
         
-        Vector12d Pos_motor;        // 12个电机的角度
-        Vector12d Vel_motor;        // 12个电机的角速度
+        Vector12d Pos_motor;        // 12个电机的角度       **********传感器输入*************
+        Vector12d Vel_motor;        // 12个电机的角速度     **********传感器输入*************
         
-        Vector3d body_Acc;   // IMU的加速度 (机体系，通常需去除重力)
-        Vector3d body_Omega; // IMU的角速度
-        Vector3d euler;      // IMU的欧拉角 (Roll, Pitch, Yaw)
-        Matrix3d body_Rot_world; // 旋转矩阵从body2world
-        Eigen::Quaterniond quat_base;  // 四元数 (w,x,y,z) 记得归一化 注意Pinocchio通常是(x,y,z,w)需对应 
+        Vector3d body_Acc;   // IMU的加速度 (机体系，通常需去除重力)     **********传感器输入*************
+        Vector3d body_Omega; // IMU的角速度                             **********传感器输入*************          
+        Vector3d euler;      // IMU的欧拉角 (Roll, Pitch, Yaw)          **********传感器输入*************
+        Matrix3d body_Rot_world; // 旋转矩阵从body2world                **********传感器输入*************
+        Eigen::Quaterniond quat_base;  // 四元数 (w,x,y,z) 记得归一化 注意Pinocchio通常是(x,y,z,w)需对应    **********传感器输入*************
         
-        Vector3d world_Acc;   // 世界系的加速度 (估算值)
-        Vector3d world_Omega; // 世界系的角速度 (R * body_Omega)
+        Vector3d world_Acc;   // 世界系的加速度 (估算值)        **********传感器输入*************
 
         // ==========================================
         // 3. 运动学解算 (Kinematics) - 输出
         // ==========================================
 
-        Matrix3x4d body_POS; // 四条腿在机体坐标系下的位置
-        Matrix3x4d world_POS;// 四条腿在世界坐标系下的位置
+        Matrix3x4d body_POS; // 四条腿在机体坐标系下的位置  **********pinocchio*************
+        Matrix3x4d world_POS;// 四条腿在世界坐标系下的位置  **********pinocchio*************
         
-        Matrix3x4d body_VEL; // 四条腿在机体坐标系下的速度
-        Matrix3x4d world_VEL;// 四条腿在世界坐标系下的速度
+        Matrix3x4d body_VEL; // 四条腿在机体坐标系下的速度  **********pinocchio*************
+        Matrix3x4d world_VEL;// 四条腿在世界坐标系下的速度  **********pinocchio*************
         
-        Vector3d world_Pos_com; // 机体在世界坐标系下质心位置
-        Vector3d world_Vel_com; // 机体在世界坐标系下质心速度
-        Vector3d body_Vel_com;  // 机体在机体坐标系下质心速度
+        Vector3d world_Pos_com; // 机体在世界坐标系下质心位置  **********作弊*************
+        Vector3d world_Vel_com; // 机体在世界坐标系下质心速度   **********作弊*************
+        Vector3d body_Vel_com;  // 机体在机体坐标系下质心速度   **********作弊*************
 
         // ==========================================
         // 4. 动力学参数 (Dynamics Constants) - 静态/配置
         // ==========================================
 
-        double mass;        // 机体总质量
-        double mu;          // 摩擦系数
+        double mass;        // 机体总质量   **********pinocchio*************
+        double mu;          // 摩擦系数     **********设置(还没给)*************
         
         // 结构偏移 (通常从URDF读取)
-        double hx, hy, l1, l2, l3; 
+        double hx, hy, l1, l2, l3;      //  **********pinocchio*************
 
-        Matrix3d body_INERTIA;  // 惯性矩阵（机体系）
-        Matrix3d world_INERTIA; // 惯性矩阵（世界系）
+        Matrix3d body_INERTIA;  // 惯性矩阵（机体系）   **********pinocchio*************
+        Matrix3d world_INERTIA; // 惯性矩阵（世界系）   **********pinocchio*************
 
         // ==========================================
         // 5. Pinocchio 动力学解算 (Dynamics Calculation) - 输出
@@ -92,8 +97,24 @@ namespace controllers {
         Vector18d h_q_dq;                  // 非线性项 (科里奥利+离心+重力)
 
         // ==========================================
+        // 6. 最终电机控制
+        // ==========================================
+
+        Vector12d Pos_motor_cmd;        // 12个电机的控制角度
+        Vector12d Vel_motor_cmd;        // 12个电机的控制角速度
+        Vector12d Kp_motor;             // 12个电机的控制角速度
+        Vector12d Kv_motor;             // 12个电机的控制角速度
+        Vector12d Torque_motor;           // 12个电机的控制角速度
+
+        // ==========================================
         // 构造函数初始化一些矩阵大小
         Robot_info() {
+            body_Vel_des.setZero();
+            world_Vel_des.setZero();
+            body_omega_des.setZero();
+            world_omega_des.setZero();
+            euler_des.setZero();
+
             J_base.setZero();
             for(int i=0; i<4; i++) {
                 J_foot[i].setZero();
@@ -103,6 +124,7 @@ namespace controllers {
             h_q_dq.setZero();
         }
     };
+    
     /**
      * @brief 步态信息结构体
      * 
@@ -138,6 +160,7 @@ namespace controllers {
         // 2. 动态状态 (Runtime Variables)
         // ==========================================
         
+        double run_time;//切换模式则重新计算运行时间
         int Gait_N;                 // 运行过几个周期
         double time_gait_degree;        // 当前全局相位 [0, 1)
         
@@ -168,7 +191,19 @@ namespace controllers {
             Time_stand_degree.setZero();
         }
     };
-
+    
+    /**
+     * @brief 摆动相信息结构体
+     * 
+    */
+    struct Swing_info {
+        Matrix3x4d world_POS_mid_touch; //四条腿的对称点世界系
+        Matrix3x4d world_POS_start_touch; //四条腿的起始点世界系
+        Matrix3x4d world_POS_end_touch; //四条腿的落足点世界系
+        Matrix3x4d link1_POS_foot; //四条腿的摆动位置跟踪点（相对于link1坐标系）
+        Matrix3x4d link1_VEL_foot; //四条腿的摆动速度跟踪点（相对于link1坐标系）
+        double swing_high;
+    };
 }
 
 #endif

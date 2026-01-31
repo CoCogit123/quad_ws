@@ -13,6 +13,7 @@
 #include <pinocchio/algorithm/center-of-mass.hpp> // 用于质心
 
 #include "Common.h"
+#include "Utils.h"
 
 namespace controllers {
 
@@ -150,8 +151,123 @@ public:
         {
             robot.mass = data_.mass[0]; // 总质量
             robot.body_INERTIA = model_.inertias[1].inertia().matrix();
+
+            pinocchio::JointIndex id_hip   = model_.getJointId("leg2_joint1");   // 左上腿第1个坐标系
+            pinocchio::JointIndex id_thigh = model_.getJointId("leg2_joint2"); // 左上腿第2个坐标系
+            pinocchio::JointIndex id_calf  = model_.getJointId("leg2_joint3");  // 左上腿第3个坐标系
+            pinocchio::FrameIndex id_foot = foot_indices_[2];
+            Eigen::Vector3d pos_hx_hy = model_.jointPlacements[id_hip].translation();
+            robot.hx = pos_hx_hy.x();
+            robot.hy = pos_hx_hy.y();
+            robot.l1 = model_.jointPlacements[id_thigh].translation().y();
+            robot.l2 = model_.jointPlacements[id_calf].translation().z();
+            robot.l3 = model_.frames[id_foot].placement.translation().z();
+
             init_ = 1;
         }
+    }
+
+    /**
+     * @brief //姿态求足端相对位置
+     * @param robot 引用传入robot_info，读取l1 l2 l3 hx hy 期望高度和欧拉角 默认偏移量并填入计算结果
+     * @endif 导出3*1向量 足端相对于第一关节坐标系的坐标
+     */
+    Vector3d posture_to_footpos(Robot_info& robot,int number) {
+        Eigen::Vector3d Op_O;
+        Op_O << 0, 0, -robot.z_des;
+        //确认方向
+        int dir_x,dir_y;
+        switch(number)
+        {
+            case 0: dir_x = 1 ; dir_y = -1; //右上
+                    break;
+            case 1: dir_x = 1 ; dir_y = 1; //左上
+                    break;
+            case 2: dir_x = -1 ; dir_y = -1; //右下
+                    break;
+            case 3: dir_x = -1 ; dir_y = 1; //左下 
+                    break;
+        }
+        //矢量加减
+        Eigen::Vector3d O_B;
+        O_B << robot.hx*dir_x+robot.p_x_offest, (robot.hy+robot.l1+robot.p_y_offest)*dir_y, 0.0;
+
+        Eigen::Vector3d O_A;
+        O_A << robot.hx*dir_x, dir_y*robot.hy, 0.0;
+
+        Eigen::Matrix3d rot_mat;//旋转
+        rot_mat = utils::euler_to_rot(robot.euler_des);
+        
+        Eigen::Vector3d Op_Ap;
+        Op_Ap = rot_mat*O_A;
+
+        Eigen::Vector3d Ap_B;
+
+            Ap_B =  Op_O + O_B - Op_Ap;
+
+        return Ap_B;
+    }
+
+    /**
+     * @brief //运动学逆解
+     * @param  pos 1.传入足端相对于第一关节坐标系的坐标 2.传入robot_info，读取l1 l2 l3 hx hy 3.方向默认后肘1 4.第几条腿
+     * @endif 导出3*1向量 对于电机的角度
+     */
+    Vector3d inverse_kinematic(Vector3d pos, Robot_info& robot,int direction,int number) {
+        //area_x 影响第一个关节 direction影响第二三个关节
+        int area_x;
+        switch(number)
+        {
+            case 0: area_x = 1 ; 
+                    break;
+            case 1: area_x = -1 ; 
+                    break;
+            case 2: area_x = 1 ; 
+                    break;
+            case 3: area_x = -1 ; 
+                    break;
+        }
+        double x,y,z;
+        double h,hu,hl;
+        x = pos[0]; 
+        y = pos[1]; 
+        z = pos[2];
+        h = robot.l1; hu = robot.l2; hl = robot.l3;
+        /*******************第一个关节角度 只有唯一解 *****************************/
+        double q0,q0_offest,q0_all;
+
+        double dyz;
+        dyz = std::sqrt( y*y + z*z );
+        double lyz;
+        lyz = std::sqrt( dyz*dyz -  h*h);
+
+        q0_all = -std::atan(y/z);
+        //area_x不同 则offest不同
+        q0_offest = -std::atan(h/lyz)*area_x;
+
+        q0 = q0_all - q0_offest;
+        /*******************第三个关节角度 direction为1是后肘的  direction为-1是前肘*****************************/
+        double q2;
+
+        double lxz;
+        lxz = std::sqrt( lyz*lyz + x*x );
+        double n;
+        n = ( lxz*lxz - hl*hl -hu*hu ) / ( 2 * hu );
+        //前肘 后肘 相反 direction
+        q2 = -std::acos( n / hl )*direction;
+
+        /*******************第二个关节角度 direction为1是后肘的  direction为-1是前肘*****************************/
+        double q1;
+
+        double alpha_xz,alpha_off;
+        alpha_xz = -std::atan( x / lyz );
+        alpha_off = std::acos( (hu + n) / lxz );
+        //前肘 后肘 相反 direction
+        q1 = ( alpha_xz + alpha_off ) * direction;
+
+        Vector3d result;
+        result << q0, q1, q2;
+        return result;
     }
 
 private:

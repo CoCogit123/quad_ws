@@ -5,19 +5,21 @@
 #include <vector>
 #include <Eigen/Dense>
 
+#include "Common.h"
+
 namespace controllers{
 
 class utils
 {
     public:
         utils(){}
-        static Eigen::Vector3d quat_to_euler(Eigen::Quaterniond quat);
-        static Eigen::Matrix3d euler_to_rot(Eigen::Vector3d euler);
+        static Vector3d quat_to_euler(Eigen::Quaterniond quat);
+        static Matrix3d euler_to_rot(Vector3d euler);
         
-        static Eigen::Vector3d bezier_pos(Eigen::Vector3d start,Eigen::Vector3d end,double swing_high,double devel);
-        static Eigen::Vector3d bezier_vel(Eigen::Vector3d start,Eigen::Vector3d end,double swing_high,double devel);
+        static Vector3d bezier_pos(Vector3d start,Vector3d end,double swing_high,double devel);
+        static Vector3d bezier_vel(Vector3d start,Vector3d end,double swing_high,double devel);
 
-        static Eigen::Matrix3d skew(Eigen::Vector3d vec);
+        static Matrix3d skew(Vector3d vec);
                             
 };
 

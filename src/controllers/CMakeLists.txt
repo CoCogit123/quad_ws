@@ -64,5 +64,11 @@ add_executable(test_gait test/test_gait.cpp )
 add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
 target_link_libraries(test_gait ${catkin_LIBRARIES})
 
+add_executable(main src/main.cpp src/Utils.cpp)
+add_dependencies(main ${catkin_EXPORTED_TARGETS}) 
+target_link_libraries(main ${catkin_LIBRARIES})
+target_link_libraries(main ${PINOCCHIO_LIBRARIES})
 
-
+add_executable(joy_key_node src/joy_key_node.cpp)
+target_link_libraries(joy_key_node ${catkin_LIBRARIES})
+add_dependencies(joy_key_node ${catkin_EXPORTED_TARGETS})
