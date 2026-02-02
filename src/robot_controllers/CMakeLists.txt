@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(controllers)#功能包名称
+project(robot_controllers)#功能包名称
 
 ###############
 ## Configure ##

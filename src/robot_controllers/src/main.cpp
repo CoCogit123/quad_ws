@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     // **************************
     Robot_info robot_info;//机器人信息
     Gait_info gait_info;//步态信息     
-    // Swing_info swing_info;//摆动相信息
+    Swing_info swing_info;//摆动相信息
 
     //类
     std::string urdf_pkg_dir = ros::package::getPath("robot_description");//urdf包路径
@@ -43,7 +43,9 @@ int main(int argc, char** argv) {
     Dynamics dynamics_solver(urdf_path);
     ROS_INFO("Dynamics Solver Initialized Successfully.");
     Gait Gait_solver;
-    ROS_INFO("Gait Solver Initialized Successfully."); 
+    ROS_INFO("Gait Solver Initialized Successfully.");
+    Swing Swing_solver;
+    ROS_INFO("Swing Solver Initialized Successfully.");
     // **************************
     // 订阅节点 设置回调函数
     // **************************
@@ -165,17 +167,20 @@ int main(int argc, char** argv) {
             // 核心控制代码
             // ---------------------------------------------
             //Pinocchio
-            dynamics_solver.update(robot_info);
+            dynamics_solver.update(robot_info); 
             //Gait
             Gait_solver.update(gait_info,thread_runtime);
+            //Swing
+            Swing_solver.update(swing_info,robot_info,gait_info);
             // 打印调试信息 (每1秒打印一次，避免刷屏)
             ROS_INFO_STREAM_THROTTLE(1.0, 
                 "\n[500Hz Thread]"
                 << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / thread_delta_t_) << " Hz"
                 << "\n  Delta T  : " << std::setprecision(6) << thread_delta_t_ << " s"
             );
-            Debug_robot_info(robot_info,1);
-            Debug_gait_info(gait_info,1);
+            // Debug_robot_info(robot_info,1);
+            // Debug_gait_info(gait_info,1);
+            Debug_swing_info(swing_info,10);
             // 休眠对齐频率
             rate.sleep();
         }

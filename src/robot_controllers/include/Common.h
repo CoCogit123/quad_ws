@@ -75,7 +75,7 @@ namespace controllers {
         // ==========================================
 
         double mass;        // 机体总质量   **********pinocchio*************
-        double mu;          // 摩擦系数     **********设置(还没给)*************
+        double mu = 0.3;          // 摩擦系数     **********配置参数*************
         
         // 结构偏移 (通常从URDF读取)
         double hx, hy, l1, l2, l3;      //  **********pinocchio*************
@@ -87,14 +87,14 @@ namespace controllers {
         // 5. Pinocchio 动力学解算 (Dynamics Calculation) - 输出
         // ==========================================
 
-        Matrix6x18d J_base;           // 雅可比矩阵 (浮动基) 关节空间 -> 线速度和角速度
-        Matrix3x18d J_foot[4];        // 雅可比矩阵 (足端)   关节空间 -> 线速度
+        Matrix6x18d J_base;           // 雅可比矩阵 (浮动基) 关节空间 -> 线速度和角速度 **********pinocchio*************
+        Matrix3x18d J_foot[4];        // 雅可比矩阵 (足端)   关节空间 -> 线速度 **********pinocchio*************
 
-        Vector6d Jdt_qdt_base;    // 机身漂移加速度 是不是用不上
-        Vector3d Jdt_qdt_foot[4];             // 足端漂移加速度 (只取线加速度)
+        Vector6d Jdt_qdt_base;    // 机身漂移加速度 是不是用不上 **********pinocchio*************
+        Vector3d Jdt_qdt_foot[4];             // 足端漂移加速度 (只取线加速度) **********pinocchio*************
 
-        Matrix18d M_q; // 广义质量矩阵
-        Vector18d h_q_dq;                  // 非线性项 (科里奥利+离心+重力)
+        Matrix18d M_q; // 广义质量矩阵 **********pinocchio*************
+        Vector18d h_q_dq;                  // 非线性项 (科里奥利+离心+重力) **********pinocchio*************
 
         // ==========================================
         // 6. 最终电机控制

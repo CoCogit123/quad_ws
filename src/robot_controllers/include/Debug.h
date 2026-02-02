@@ -175,6 +175,49 @@ namespace controllers {
 
         printf("\033[1;35m=====================================================\033[0m\n");
     }
-}
 
+    /**
+     * @brief 打印摆动腿相关信息 (落足点、轨迹跟踪、摆动高度)
+     * @param swing  Swing_info结构体
+     * @param freq   打印频率 (Hz)
+     */
+    void Debug_swing_info(const Swing_info& swing, double freq) {
+        static double last_print_time = 0;
+        double current_time = ros::Time::now().toSec();
+        if (current_time - last_print_time < (1.0 / freq)) return;
+        last_print_time = current_time;
+
+        const char* leg_names[4] = {"FL", "FR", "RL", "RR"};
+
+        printf("\n\033[1;35m==================== [swing_trajectory_info] ====================\033[0m\n");
+        printf("Swing Height Setpoint: %.3f m\n\n", swing.swing_high);
+
+        // 打印表头
+        printf("%-4s | %-20s | %-20s | %-20s\n", "Leg", "Start (World)", "Center (World)", "End (World)");
+        printf("------------------------------------------------------------------------------\n");
+
+        for (int i = 0; i < 4; i++) {
+            // 打印世界系下的关键点数据
+            printf("\033[1;36m%-4s\033[0m | [%.2f, %.2f, %.2f] | [%.2f, %.2f, %.2f] | \033[1;32m[%.2f, %.2f, %.2f]\033[0m\n",
+                leg_names[i],
+                swing.world_POS_start_touch(0, i), swing.world_POS_start_touch(1, i), swing.world_POS_start_touch(2, i),
+                swing.world_POS_mid_touch(0, i),   swing.world_POS_mid_touch(1, i),   swing.world_POS_mid_touch(2, i),
+                swing.world_POS_end_touch(0, i),   swing.world_POS_end_touch(1, i),   swing.world_POS_end_touch(2, i));
+        }
+
+        printf("\033[1;33m[Tracking in Link1 Frame]\033[0m\n");
+        printf("%-4s | %-20s | %-20s\n", "Leg", "Pos_ref (x,y,z)", "Vel_ref (vx,vy,vz)");
+        printf("------------------------------------------------------------------------------\n");
+
+        for (int i = 0; i < 4; i++) {
+            // 打印 Link1 坐标系下的实时跟踪指令
+            printf("%-4s | [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f]\n",
+                leg_names[i],
+                swing.link1_POS_foot(0, i), swing.link1_POS_foot(1, i), swing.link1_POS_foot(2, i),
+                swing.link1_VEL_foot(0, i), swing.link1_VEL_foot(1, i), swing.link1_VEL_foot(2, i));
+        }
+
+        printf("\033[1;35m=================================================================\033[0m\n");
+        }
+    }
 #endif
