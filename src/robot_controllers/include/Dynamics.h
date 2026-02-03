@@ -14,6 +14,7 @@
 
 #include "Common.h"
 #include "Utils.h"
+#include <ros/ros.h>
 
 namespace controllers {
 
@@ -160,8 +161,8 @@ public:
             robot.hx = pos_hx_hy.x();
             robot.hy = pos_hx_hy.y();
             robot.l1 = model_.jointPlacements[id_thigh].translation().y();
-            robot.l2 = model_.jointPlacements[id_calf].translation().z();
-            robot.l3 = model_.frames[id_foot].placement.translation().z();
+            robot.l2 = -model_.jointPlacements[id_calf].translation().z();
+            robot.l3 = -model_.frames[id_foot].placement.translation().z();
 
             init_ = 1;
         }
@@ -172,7 +173,7 @@ public:
      * @param robot 引用传入robot_info，读取l1 l2 l3 hx hy 期望高度和欧拉角 默认偏移量并填入计算结果
      * @endif 导出3*1向量 足端相对于第一关节坐标系的坐标
      */
-    Vector3d posture_to_footpos(Robot_info& robot,int number) {
+    static Vector3d posture_to_footpos(Robot_info& robot,int number) {
         Eigen::Vector3d Op_O;
         Op_O << 0, 0, -robot.z_des;
         //确认方向
@@ -204,7 +205,6 @@ public:
         Eigen::Vector3d Ap_B;
 
             Ap_B =  Op_O + O_B - Op_Ap;
-
         return Ap_B;
     }
 
@@ -213,7 +213,7 @@ public:
      * @param  pos 1.传入足端相对于第一关节坐标系的坐标 2.传入robot_info，读取l1 l2 l3 hx hy 3.方向默认后肘1 4.第几条腿
      * @endif 导出3*1向量 对于电机的角度
      */
-    Vector3d inverse_kinematic(Vector3d pos, Robot_info& robot,int direction,int number) {
+    static Vector3d inverse_kinematic(Vector3d pos, Robot_info& robot, int direction, int number) {
         //area_x 影响第一个关节 direction影响第二三个关节
         int area_x;
         switch(number)
@@ -234,38 +234,52 @@ public:
         z = pos[2];
         h = robot.l1; hu = robot.l2; hl = robot.l3;
         /*******************第一个关节角度 只有唯一解 *****************************/
-        double q0,q0_offest,q0_all;
+        double q0,r1,r2;
 
-        double dyz;
-        dyz = std::sqrt( y*y + z*z );
-        double lyz;
-        lyz = std::sqrt( dyz*dyz -  h*h);
+        double d_zoy;//yz指的是zoy平面
+        d_zoy = std::sqrt( y*y + z*z );
+        double l_zoy;
+        l_zoy = std::sqrt( d_zoy*d_zoy -  h*h);
 
-        q0_all = -std::atan(y/z);
+        r2 = -std::atan(y/z);
         //area_x不同 则offest不同
-        q0_offest = -std::atan(h/lyz)*area_x;
+        r1 = -std::atan(h/l_zoy)*area_x;
+        q0 = r2 - r1;
 
-        q0 = q0_all - q0_offest;
+        // ROS_INFO("q0: %f,number: %d",q0/3.14*180,number);
+
         /*******************第三个关节角度 direction为1是后肘的  direction为-1是前肘*****************************/
         double q2;
 
-        double lxz;
-        lxz = std::sqrt( lyz*lyz + x*x );
+        double S_xoz;
+        S_xoz = std::sqrt( l_zoy*l_zoy + x*x );
         double n;
-        n = ( lxz*lxz - hl*hl -hu*hu ) / ( 2 * hu );
+        n = ( S_xoz*S_xoz - hl*hl -hu*hu ) / ( 2 * hu );
         //前肘 后肘 相反 direction
-        q2 = -std::acos( n / hl )*direction;
+        q2 = -std::acos( n / hl );
+
+            // ROS_INFO("q2: %f,number: %d",q2/3.14*180,number);
+            
 
         /*******************第二个关节角度 direction为1是后肘的  direction为-1是前肘*****************************/
         double q1;
 
-        double alpha_xz,alpha_off;
-        alpha_xz = -std::atan( x / lyz );
-        alpha_off = std::acos( (hu + n) / lxz );
+        double alpha1_xoz,alpha2_xoz;
+        alpha1_xoz = -std::atan( x / l_zoy );
+        alpha2_xoz = std::acos( (hu + n) / S_xoz );
         //前肘 后肘 相反 direction
-        q1 = ( alpha_xz + alpha_off ) * direction;
+        q1 = ( alpha1_xoz + alpha2_xoz );
+            // ROS_INFO("hu:%f",hu);
+            // ROS_INFO("n:%f",n);
+            // ROS_INFO("S_xoz:%f",S_xoz);
+            // // ROS_INFO("l_zoy:%f",l_zoy);
+            
+            
+            // ROS_INFO("alpha1_xoz: %f,number: %d",alpha1_xoz/3.14*180,number);
+            // ROS_INFO("alpha2_xoz: %f,number: %d",alpha2_xoz/3.14*180,number);
+            // ROS_INFO("q1: %f,number: %d",q1/3.14*180,number);
 
-        Vector3d result;
+        Eigen::Vector3d result;
         result << q0, q1, q2;
         return result;
     }

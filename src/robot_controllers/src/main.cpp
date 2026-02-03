@@ -6,6 +6,7 @@
 #include "Gait.h"
 #include "Swing.h"
 #include "Debug.h"
+#include "Manager.h"
 //自定义消息包
 #include <custom_msgs/Motor_state.h>
 #include <custom_msgs/Motor_control.h>
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
     Robot_info robot_info;//机器人信息
     Gait_info gait_info;//步态信息     
     Swing_info swing_info;//摆动相信息
-
+    
     //类
     std::string urdf_pkg_dir = ros::package::getPath("robot_description");//urdf包路径
     std::string urdf_path = urdf_pkg_dir +  "/robot/urdf/robot.urdf";//urdf路径
@@ -46,6 +47,8 @@ int main(int argc, char** argv) {
     ROS_INFO("Gait Solver Initialized Successfully.");
     Swing Swing_solver;
     ROS_INFO("Swing Solver Initialized Successfully.");
+    Manager Manager_solver;
+    ROS_INFO("Manager Solver Initialized Successfully.");
     // **************************
     // 订阅节点 设置回调函数
     // **************************
@@ -108,6 +111,7 @@ int main(int argc, char** argv) {
         "/joy_control", 
         10, 
         [&robot_info, &gait_info](const custom_msgs::Joy_control::ConstPtr& msg) {
+            robot_info.run_flag = msg->run_flag;
             if(msg->run_flag == true)
             {
                 // 1. 存储线速度（机体系）
@@ -116,14 +120,15 @@ int main(int argc, char** argv) {
                 // 2. 存储角速度（机体系）- 假设 msg->yaw_vel 对应绕 Z 轴角速度
                 robot_info.body_omega_des = Vector3d(0.0, 0.0, msg->yaw_vel);
 
-                // 3. 根据 Z 方向速度更新期望高度 z_des (数值积分)
-                // 注意：这里需要乘以 dt，或者给一个步进增量。假设控制周期约为 10ms
-                double dt = 0.01; 
-                robot_info.z_des += msg->com_vel.z * dt;
-                // 4. 设置高度限幅 (例如 0.1m 到 0.5m)
-                robot_info.z_des = std::max(0.1, std::min(0.5, robot_info.z_des));
-
-                robot_info.euler_des[2] = robot_info.euler[2] + msg->yaw_vel*dt;
+                // 3.  Z 期望高度 z_des 
+                static double z_now = 0.15;
+                double step = msg->z_des - z_now;
+                double limited_step = (step > 0.01) ? 0.01 : ((step < -0.0005) ? -0.0005 : step);
+                z_now += limited_step;
+                robot_info.z_des = z_now;
+                
+                double dt = 0.005;
+                robot_info.euler_des[2] = robot_info.euler_des[2] + msg->yaw_vel*dt;
 
                 // 5. 读取 mode 并转换为步态枚举存储
                 // 假设你的枚举强制转换是安全的
@@ -141,7 +146,10 @@ int main(int argc, char** argv) {
             robot_info.world_omega_des = robot_info.body_omega_des;
         }
     );
-
+    // **************************
+    // 发布节点
+    // **************************
+    ros::Publisher motor_pub = nh.advertise<custom_msgs::Motor_control>("/Motor_control", 10);
     // =========================================================
     // 线程 1  (500Hz) 
     // =========================================================
@@ -172,15 +180,18 @@ int main(int argc, char** argv) {
             Gait_solver.update(gait_info,thread_runtime);
             //Swing
             Swing_solver.update(swing_info,robot_info,gait_info);
+            //Manager
+            Manager_solver.update(robot_info,gait_info,swing_info);
+            Manager_solver.motor_cmd(robot_info,motor_pub);
             // 打印调试信息 (每1秒打印一次，避免刷屏)
-            ROS_INFO_STREAM_THROTTLE(1.0, 
-                "\n[500Hz Thread]"
-                << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / thread_delta_t_) << " Hz"
-                << "\n  Delta T  : " << std::setprecision(6) << thread_delta_t_ << " s"
-            );
-            // Debug_robot_info(robot_info,1);
+            // ROS_INFO_STREAM_THROTTLE(1.0, 
+            //     "\n[500Hz Thread]"
+            //     << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / thread_delta_t_) << " Hz"
+            //     << "\n  Delta T  : " << std::setprecision(6) << thread_delta_t_ << " s"
+            // );
+            Debug_robot_info(robot_info,1);
             // Debug_gait_info(gait_info,1);
-            Debug_swing_info(swing_info,10);
+            // Debug_swing_info(swing_info,10);
             // 休眠对齐频率
             rate.sleep();
         }

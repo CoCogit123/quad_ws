@@ -37,18 +37,20 @@ namespace controllers {
 
         printf("\n\033[1;36m==================== [robot_info] ====================\033[0m\n");
         printf("\033[1;32m==================== [target_commands] ====================\033[0m\n");
-        // --- 1. 线速度指令 (Linear Velocity) ---
-        printf("\033[1;33m[Linear Velocity Desired]\033[0m\n");
-        printf("  Body  Vel (m/s): [%8.4f, %8.4f, %8.4f]\n", 
-            robot.body_Vel_des.x(), robot.body_Vel_des.y(), robot.body_Vel_des.z());
-        printf("  World Vel (m/s): [%8.4f, %8.4f, %8.4f]\n", 
-            robot.world_Vel_des.x(), robot.world_Vel_des.y(), robot.world_Vel_des.z());
-        // --- 2. 角速度指令 (Angular Velocity) ---
-        printf("\033[1;33m[Angular Velocity Desired]\033[0m\n");
-        printf("  Body  Omega (rad/s): [%8.4f, %8.4f, %8.4f]\n", 
-            robot.body_omega_des.x(), robot.body_omega_des.y(), robot.body_omega_des.z());
-        printf("  World Omega (rad/s): [%8.4f, %8.4f, %8.4f]\n", 
-            robot.world_omega_des.x(), robot.world_omega_des.y(), robot.world_omega_des.z());
+        // // --- 1. 线速度指令 (Linear Velocity) ---
+        // printf("\033[1;33m[Linear Velocity Desired]\033[0m\n");
+        // printf("  Body  Vel (m/s): [%8.4f, %8.4f, %8.4f]\n", 
+        //     robot.body_Vel_des.x(), robot.body_Vel_des.y(), robot.body_Vel_des.z());
+        // printf("  World Vel (m/s): [%8.4f, %8.4f, %8.4f]\n", 
+        //     robot.world_Vel_des.x(), robot.world_Vel_des.y(), robot.world_Vel_des.z());
+
+        // // --- 2. 角速度指令 (Angular Velocity) ---
+        // printf("\033[1;33m[Angular Velocity Desired]\033[0m\n");
+        // printf("  Body  Omega (rad/s): [%8.4f, %8.4f, %8.4f]\n", 
+        //     robot.body_omega_des.x(), robot.body_omega_des.y(), robot.body_omega_des.z());
+        // printf("  World Omega (rad/s): [%8.4f, %8.4f, %8.4f]\n", 
+        //     robot.world_omega_des.x(), robot.world_omega_des.y(), robot.world_omega_des.z());
+
         // --- 3. 姿态与高度指令 (State Setpoints - Integrated) ---
         printf("\033[1;33m[Postural Setpoints (Integrated)]\033[0m\n");
         // 将欧拉角转为角度打印，更符合直觉
@@ -75,7 +77,7 @@ namespace controllers {
         //     robot.world_Acc.x(), robot.world_Acc.y(), robot.world_Acc.z());
 
         // // --- Kinematics ---
-        // printf("\033[1;33m========= [Kinematics] =========\033[0m\n");
+        printf("\033[1;33m========= [Kinematics] =========\033[0m\n");
         // printf("\033[1;33m[Foot Positions (Body | World)]\033[0m\n");
         // printf("         |      FL      |      FR      |      RL      |      RR      |\n");
         // printf("  Body  X: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(0,0), robot.body_POS(0,1), robot.body_POS(0,2), robot.body_POS(0,3));
@@ -85,10 +87,10 @@ namespace controllers {
         // printf("  World X: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(0,0), robot.world_POS(0,1), robot.world_POS(0,2), robot.world_POS(0,3));
         // printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(1,0), robot.world_POS(1,1), robot.world_POS(1,2), robot.world_POS(1,3));
         // printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(2,0), robot.world_POS(2,1), robot.world_POS(2,2), robot.world_POS(2,3));
-        // printf("\033[1;33m[com info (Body | World)]\033[0m\n");
-        // printf("  World_Pos_Com   (m): [%8.4f, %8.4f, %8.4f]\n", robot.world_Pos_com[0], robot.world_Pos_com[1], robot.world_Pos_com[2]);
-        // printf("  world_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.world_Vel_com[0], robot.world_Vel_com[1], robot.world_Vel_com[2]);
-        // printf("  body_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.body_Vel_com[0], robot.body_Vel_com[1], robot.body_Vel_com[2]);
+        printf("\033[1;33m[com info (Body | World)]\033[0m\n");
+        printf("  World_Pos_Com   (m): [%8.4f, %8.4f, %8.4f]\n", robot.world_Pos_com[0], robot.world_Pos_com[1], robot.world_Pos_com[2]);
+        printf("  world_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.world_Vel_com[0], robot.world_Vel_com[1], robot.world_Vel_com[2]);
+        printf("  body_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.body_Vel_com[0], robot.body_Vel_com[1], robot.body_Vel_com[2]);
 
         // // --- Dynamics Constants ---
         // printf("\033[1;33m[Dynamics Constants]\033[0m\n");
@@ -128,7 +130,29 @@ namespace controllers {
         //         robot.Jdt_qdt_foot[i].x(), robot.Jdt_qdt_foot[i].y(), robot.Jdt_qdt_foot[i].z());
         // }
 
-        printf("\033[1;36m======================================================\033[0m\n");
+    //     // --- Motor cmd (按照四足机器人腿部逻辑排列) ---
+    //     printf("\033[1;33m[Motor Control Commands (Pos | Vel | Kp | Kd | Tau)]\033[0m\n");
+    //     // 打印表头
+    //     printf(" ID |  Pos(rad) |  Vel(r/s) |   Kp    |   Kd    |  Tau(Nm) \n");
+    //     printf("----|-----------|-----------|---------|---------|----------\n");
+    //     for (int i = 0; i < 4; ++i) {
+    //         // 每条腿之间打印一个颜色标记，方便区分 FL, FR, RL, RR
+    //         const char* leg_labels[4] = {"FL", "FR", "RL", "RR"};
+    //         printf("\033[1;36m%s\033[0m\n", leg_labels[i]);
+    //         for (int j = 0; j < 3; ++j) {
+    //             int idx = i * 3 + j;
+    //             printf(" %02d | %9.4f | %9.4f | %7.2f | %7.2f | \033[1;32m%8.4f\033[0m\n",
+    //                 idx,
+    //                 robot.Pos_motor_cmd[idx],
+    //                 robot.Vel_motor_cmd[idx],
+    //                 robot.Kp_motor[idx],
+    //                 robot.Kd_motor[idx],
+    //                 robot.Torque_motor[idx]);
+    //         }
+    //         if (i < 3) printf("----|-----------|-----------|---------|---------|----------\n");
+    //     }
+
+        printf("\033[1;33m-----------------------------------------------------------\033[0m\n");
     }
 
     /**
@@ -198,7 +222,7 @@ namespace controllers {
 
         for (int i = 0; i < 4; i++) {
             // 打印世界系下的关键点数据
-            printf("\033[1;36m%-4s\033[0m | [%.2f, %.2f, %.2f] | [%.2f, %.2f, %.2f] | \033[1;32m[%.2f, %.2f, %.2f]\033[0m\n",
+            printf("\033[1;36m%-4s\033[0m | [%.2f, %.2f, %.2f] | [%.2f, %.2f, %.2f] | [%.2f, %.2f, %.2f]\n",
                 leg_names[i],
                 swing.world_POS_start_touch(0, i), swing.world_POS_start_touch(1, i), swing.world_POS_start_touch(2, i),
                 swing.world_POS_mid_touch(0, i),   swing.world_POS_mid_touch(1, i),   swing.world_POS_mid_touch(2, i),

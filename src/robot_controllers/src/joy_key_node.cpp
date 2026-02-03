@@ -31,7 +31,8 @@ int main(int argc, char** argv) {
     msg.mode = 0;
 
     // --- 速度控制参数 ---
-    double target_vx = 0.0, target_vy = 0.0, target_vz = 0.0;
+    double target_vx = 0.0, target_vy = 0.0;
+    double z_des = 0.2;//期望高度
     const double MAX_VEL = 0.5;      // 最大恒定速度
     const double RAMP_STEP = 0.02;   // 步进值（值越小越平滑，0.02 在 100Hz 下代表 0.5秒从0加到1.0）
 
@@ -65,9 +66,6 @@ int main(int argc, char** argv) {
                     if (code == KEY_D) target_vy = (val > 0) ?  MAX_VEL : 0.0;
                     else if (code == KEY_A) target_vy = (val > 0) ? -MAX_VEL : 0.0;
 
-                    if (code == KEY_U) target_vz = (val > 0) ?  MAX_VEL : 0.0;
-                    else if (code == KEY_H) target_vz = (val > 0) ? -MAX_VEL : 0.0;
-
                     // 类别 B: 下降沿触发切换
                     if (val == 1) {
                         if (code == KEY_O) {
@@ -78,7 +76,10 @@ int main(int argc, char** argv) {
                         else if (code == KEY_X) msg.mode = 1;
                         else if (code == KEY_C) msg.mode = 2;
                         else if (code == KEY_V) msg.mode = 3;
-                        
+                        else if (code == KEY_U) z_des+=0.025;
+                        else if (code == KEY_H) z_des-=0.025;
+                        z_des = std::max(0.2, std::min(0.35, z_des));
+                        if (code == KEY_U || code == KEY_H) ROS_INFO("z_des: %f", z_des);
                         if (code >= KEY_Z && code <= KEY_V) ROS_INFO("Mode: %d", msg.mode);
                     }
                 }
@@ -94,8 +95,9 @@ int main(int argc, char** argv) {
 
         apply_ramp(msg.com_vel.x, target_vx);
         apply_ramp(msg.com_vel.y, target_vy);
-        apply_ramp(msg.com_vel.z, target_vz);
-
+        msg.com_vel.z = 0;
+        msg.z_des = z_des;
+        msg.yaw_vel = 0;
         // 4. 定时发布
         pub.publish(msg);
         ros::spinOnce();
