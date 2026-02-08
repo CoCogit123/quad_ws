@@ -64,6 +64,12 @@ int main(int argc, char *argv[])
     mjtNum simstart = mj_data->time;
     mju_copy(mj_data->qpos,mj_model->key_qpos,mj_model->nq*1);//固定住起始姿态
 
+    //力矩传感器
+    int foot1_sensor_id = mj_name2id(mj_model, mjOBJ_SENSOR, "foot1_sensor");
+    int foot2_sensor_id = mj_name2id(mj_model, mjOBJ_SENSOR, "foot2_sensor");
+    int foot3_sensor_id = mj_name2id(mj_model, mjOBJ_SENSOR, "foot3_sensor");
+    int foot4_sensor_id = mj_name2id(mj_model, mjOBJ_SENSOR, "foot4_sensor");
+
     //和外部的
     double start_time = mj_data->time;
     double run_time;
@@ -142,6 +148,22 @@ int main(int argc, char *argv[])
             imu_msg.linear_acceleration.y = mj_interface.baseAcc[1];
             imu_msg.linear_acceleration.z = mj_interface.baseAcc[2];
             imu_pub.publish(imu_msg);
+
+            double foot_force[4];
+            int adr[4];
+            adr[0] = mj_model->sensor_adr[foot1_sensor_id];
+            adr[1] = mj_model->sensor_adr[foot2_sensor_id];
+            adr[2] = mj_model->sensor_adr[foot3_sensor_id];
+            adr[3] = mj_model->sensor_adr[foot4_sensor_id];
+            foot_force[0] = mj_data->sensordata[adr[0]];
+            foot_force[1] = mj_data->sensordata[adr[1]];
+            foot_force[2] = mj_data->sensordata[adr[2]];
+            foot_force[3] = mj_data->sensordata[adr[3]];
+            static int step_counter;
+            if (step_counter % 500 == 0) { 
+                printf("Foot Force : %.3f\t %.3f\t %.3f\t %.3f\n", foot_force[0],foot_force[1], foot_force[2], foot_force[3]);
+            }
+            step_counter ++;
         }
 
         uiController.updateScene();

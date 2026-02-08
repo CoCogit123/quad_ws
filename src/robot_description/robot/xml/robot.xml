@@ -99,6 +99,7 @@
                         <body name="leg1_link4" pos="0 0 -0.21" >
                             <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg1_link4"/> <!--可视化-->
                             <geom name="leg1_link4" class="foot" /><!--碰撞-->
+                            <site name="foot1_sensor_site" pos="0 0 0" size="0.02" rgba="0 0 0 0" /><!--用于力矩传感器-->
                         </body>    
                     </body>
                 </body>
@@ -127,6 +128,7 @@
                         <body name="leg2_link4" pos="0 0 -0.21" >
                             <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg2_link4"/> <!--可视化-->
                             <geom name="leg2_link4" class="foot" /><!--碰撞-->
+                            <site name="foot2_sensor_site" pos="0 0 0" size="0.02" rgba="0 0 0 0" /><!--用于力矩传感器-->
                         </body>    
                     </body>
                 </body>
@@ -155,6 +157,7 @@
                         <body name="leg3_link4" pos="0 0 -0.21" >
                             <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg3_link4"/> <!--可视化-->
                             <geom name="leg3_link4" class="foot" /><!--碰撞-->
+                            <site name="foot3_sensor_site" pos="0 0 0" size="0.02" rgba="0 0 0 0" /><!--用于力矩传感器-->
                         </body>    
                     </body>
                 </body>
@@ -183,6 +186,7 @@
                         <body name="leg4_link4" pos="0 0 -0.21" >
                             <geom material="color_link4" quat="1 0 0 0" class="visual" mesh="leg4_link4"/> <!--可视化-->
                             <geom name="leg4_link4" class="foot" /><!--碰撞-->
+                            <site name="foot4_sensor_site" pos="0 0 0" size="0.02" rgba="1 0 0 1" /><!--用于力矩传感器-->
                         </body>    
                     </body>
                 </body>
@@ -240,6 +244,11 @@
         
         <framepos    name="frame_pos" objtype="site" objname="imu" />
         <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+        <touch name="foot1_sensor" site="foot1_sensor_site"/>
+        <touch name="foot2_sensor" site="foot2_sensor_site"/>
+        <touch name="foot3_sensor" site="foot3_sensor_site"/>
+        <touch name="foot4_sensor" site="foot4_sensor_site"/>
     </sensor>   
 
     <!--初始状态 初始高度 和 四元数 四条腿电机角度-->

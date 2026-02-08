@@ -55,16 +55,11 @@ include_directories(
 link_directories(${PINOCCHIO_LIBRARY_DIRS})
 
 #添加可执行程序
-add_executable(test_dynamics test/test_dynamics.cpp )
-add_dependencies(test_dynamics ${catkin_EXPORTED_TARGETS}) 
-target_link_libraries(test_dynamics ${catkin_LIBRARIES})
-target_link_libraries(test_dynamics ${PINOCCHIO_LIBRARIES})
+# add_executable(test_gait test/test_gait.cpp )
+# add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
+# target_link_libraries(test_gait ${catkin_LIBRARIES})
 
-add_executable(test_gait test/test_gait.cpp )
-add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
-target_link_libraries(test_gait ${catkin_LIBRARIES})
-
-add_executable(main src/main.cpp src/Utils.cpp)
+add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp)
 add_dependencies(main ${catkin_EXPORTED_TARGETS}) 
 target_link_libraries(main ${catkin_LIBRARIES})
 target_link_libraries(main ${PINOCCHIO_LIBRARIES})
