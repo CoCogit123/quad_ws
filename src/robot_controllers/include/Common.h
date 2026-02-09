@@ -15,12 +15,15 @@ namespace controllers {
     using Vector18d = Eigen::Matrix<double, 18, 1>;
     using Vector19d = Eigen::Matrix<double, 19, 1>; // Pinocchio中浮动基q是7维(4元数+3位置)
     using Vector4i = Eigen::Vector4i; //int
+    using Vector28d = Eigen::Matrix<double, 28, 1>;
     using Matrix3d = Eigen::Matrix3d;
     using Matrix3x4d = Eigen::Matrix<double, 3, 4>;
     using Matrix6x18d = Eigen::Matrix<double, 6, 18>;
     using Matrix3x18d = Eigen::Matrix<double, 3, 18>;
     using Matrix18d = Eigen::Matrix<double, 18, 18>;
-
+    using Matrix18x3d = Eigen::Matrix<double, 18, 3>;
+    using Matrix28d = Eigen::Matrix<double, 28, 28>;
+    using Matrix28x18d = Eigen::Matrix<double, 28, 18>;
     /**
      * @brief 机器人信息结构体
      * 通用数据
@@ -35,7 +38,7 @@ namespace controllers {
         Vector3d body_omega_des; // 期望角速度-机体系       **********遥控器输入*************
         Vector3d world_omega_des;// 期望角速度-世界系       **********遥控器输入*************
 
-        double z_des = 0.3;//期望高度（速度累计来）         **********遥控器输入*************
+        double z_des = 0.1;//期望高度（速度累计来）         **********遥控器输入*************
         Vector3d euler_des;//期望欧拉角（速度累计来）       **********遥控器输入*************
 
         double p_x_offest = -0.02;//足端默认支撑时的x偏移量（左上腿为标准 ）**********配置参数*************
@@ -71,6 +74,7 @@ namespace controllers {
         Vector3d world_Vel_com; // 机体在世界坐标系下质心速度   **********作弊*************
         Vector3d body_Vel_com;  // 机体在机体坐标系下质心速度   **********作弊*************
 
+        Vector18d X_est;
         // ==========================================
         // 4. 动力学参数 (Dynamics Constants) - 静态/配置
         // ==========================================
@@ -203,7 +207,13 @@ namespace controllers {
         Matrix3x4d world_POS_end_touch; //四条腿的落足点世界系
         Matrix3x4d link1_POS_foot; //四条腿的摆动位置跟踪点（相对于link1坐标系）
         Matrix3x4d link1_VEL_foot; //四条腿的摆动速度跟踪点（相对于link1坐标系）
-        double swing_high;
+        Matrix3x4d world_POS_foot; //四条腿的摆动位置跟踪点（相对于世界系）
+        Matrix3x4d world_VEL_foot; //四条腿的摆动速度跟踪点（相对于世界系）
+        Matrix3x4d leg_delta;//摆动腿关于对称点的增量（考虑了旋转的，旋转后的世界系）
+        double swing_high = 0.1;//10cm
+
+        double torque_kp = 100;
+        double torque_kd = 1.0;
     };
 }
 

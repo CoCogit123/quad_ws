@@ -21,23 +21,24 @@ namespace controllers{
                         break;
             }
             /*****起点****/ 
-            //捕捉变换帧
-            if(last_gait_type_[i]==1&&gait.Gait_state[i]==0)
+            //捕捉变换帧 
+            if(gait.Gait_state[i]==1)
             {
                 swing.world_POS_start_touch.col(i) = robot.world_POS.col(i);
             }
-            last_gait_type_[i] = gait.Gait_state[i];
+            // last_gait_type_[i] = gait.Gait_state[i];
             /*****中间对称点****/
             Pos_com_touch_ = robot.world_Pos_com + robot.world_Vel_des*(1-gait.Time_swing_degree[i])*gait.time_swing;
             yaw_touch_ = robot.euler[2] + robot.body_omega_des[2]*(1-gait.Time_swing_degree[i])*gait.time_swing;
-            //机体系
+            //机体系的xy z等于0
             body_POS_mid_(0,i) = dir_x*robot.hx + robot.p_x_offest;
             body_POS_mid_(1,i) = dir_y*(robot.hy + robot.p_y_offest + robot.l1 );
             body_POS_mid_(2,i) = 0;
             //世界系
             Vector3d euler1_;
             euler1_ << 0, 0, yaw_touch_;
-            swing.world_POS_mid_touch.col(i) = Pos_com_touch_ + utils::euler_to_rot(euler1_)*body_POS_mid_.col(i);
+            swing.world_POS_mid_touch.col(i) = Pos_com_touch_ + utils::euler_to_rot(euler1_)*body_POS_mid_.col(i); 
+            swing.world_POS_mid_touch(2,i) = swing.swing_high; //z为摆动高度 
             /*****终点****/
             //增量
             delta_P1_.col(i) = robot.world_Vel_des*gait.time_stand/2;  
@@ -46,20 +47,25 @@ namespace controllers{
             delta_P2_.col(i)= utils::euler_to_rot(euler1_)*( utils::euler_to_rot(euler2_)*body_POS_mid_.col(i) - body_POS_mid_.col(i));
             delta_P3_.col(i) = k_foot_*( robot.world_Vel_com - robot.world_Vel_des);
             delta_P4_.col(i) = (robot.world_Pos_com[2]/9.8)*utils::skew(robot.world_Vel_com) * robot.body_Omega;
-            swing.world_POS_end_touch.col(i) = swing.world_POS_mid_touch.col(i) + delta_P1_.col(i) + delta_P2_.col(i) + delta_P3_.col(i) + delta_P4_.col(i);
+            swing.leg_delta.col(i) = delta_P1_.col(i) + delta_P2_.col(i) + delta_P3_.col(i) + delta_P4_.col(i);
+            swing.world_POS_end_touch.col(i) = swing.world_POS_mid_touch.col(i) + swing.leg_delta.col(i);
+            swing.world_POS_end_touch(2,i) = 0; //z为0 与地面接触
             /********************************贝塞尔跟踪点********************************/
-            Vector3d bezier_start,bezier_end;
-            bezier_start =  robot.body_Rot_world.transpose()*(swing.world_POS_start_touch.col(i) - robot.world_Pos_com);
-            bezier_start[0] -= dir_x*robot.hx;
-            bezier_start[1] -= dir_x*robot.hy;
-            bezier_end = robot.body_Rot_world.transpose()*(swing.world_POS_end_touch.col(i) - robot.world_Pos_com);
-            bezier_end[0] -= dir_x*robot.hx;
-            bezier_end[1] -= dir_x*robot.hy;
-            if(gait.Gait_state[i]==0)
-            {
-                swing.link1_POS_foot.col(i) = bezier_pos(bezier_start,bezier_end,swing.swing_high,gait.Time_swing_degree[i]);
-                swing.link1_VEL_foot.col(i) = bezier_vel(bezier_start,bezier_end,swing.swing_high,gait.Time_swing_degree[i],gait.time_swing);
-            }
+            Vector3d bezier_pos_target,bezier_vel_target; //世界系的贝塞尔跟踪点
+            bezier_pos_target = bezier_pos(swing.world_POS_start_touch.col(i),swing.world_POS_end_touch.col(i),swing.swing_high,gait.Time_swing_degree[i]);
+            bezier_vel_target = bezier_pos(swing.world_POS_start_touch.col(i),swing.world_POS_end_touch.col(i),swing.swing_high,gait.Time_swing_degree[i]);
+            swing.world_POS_foot.col(i) = bezier_pos_target;
+            swing.world_VEL_foot.col(i) = bezier_vel_target;
+            //转化到机体系
+            Vector3d vec3;
+            Vector3d euler3_;
+            euler3_ << 0,0,robot.euler[2];
+            vec3 = utils::euler_to_rot(euler3_).transpose()*(bezier_pos_target - robot.world_Pos_com);
+            vec3[0] -= dir_x*robot.hx;
+            vec3[1] -= dir_y*robot.hy;
+            swing.link1_POS_foot.col(i) = vec3;
+            swing.link1_VEL_foot.col(i) = robot.body_Rot_world.transpose()*bezier_vel_target;
+            
         }
     }
 
@@ -145,4 +151,5 @@ namespace controllers{
         // v(m/s) = v(phase) / swing_time
         return result / swing_time;
     }
+
 }

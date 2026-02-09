@@ -13,7 +13,7 @@ namespace controllers {
         }else
         {
             //swing
-            swing_torque_control(robot,gait,swing);
+            swing_pos_control(robot,gait,swing);
             //stand
             stand_pos_control(robot,gait); 
         }
@@ -79,7 +79,12 @@ namespace controllers {
                 robot.Vel_motor_cmd.segment<3>(i*3).setZero();
                 robot.Kp_motor.segment<3>(i*3).setZero();
                 robot.Kd_motor.segment<3>(i*3).setZero();
-                robot.Torque_motor.segment<3>(i*3).setZero();
+                //世界系的力矩
+                Vector3d foot_torque = swing.torque_kp*(swing.world_POS_foot.col(i) - robot.world_POS.col(i)) 
+                                    + swing.torque_kd*(swing.world_VEL_foot.col(i) - robot.world_VEL.col(i));
+                //世界雅可比矩阵
+                Matrix3d J_leg = robot.J_foot[i].block<3,3>(0,6+i*3);
+                robot.Torque_motor.segment<3>(i*3) = J_leg.transpose()*foot_torque;
             }
         }
     }
@@ -87,7 +92,7 @@ namespace controllers {
     void Manager::stand_pos_control(Robot_info &robot,Gait_info &gait)
     {
         for(int i=0;i<4;i++)
-        {
+        { 
             if(gait.Gait_state[i]==1)
             {
                 Vector3d pos = Dynamics::posture_to_footpos(robot,i);

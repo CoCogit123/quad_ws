@@ -1,7 +1,7 @@
 #ifndef ESTIMATE_H
 #define ESTIMATE_H
 
-#include "Dynamics.h"
+#include "Common.h"
 
 #define PROCESS_NOISE_POS 0.01 
 #define PROCESS_NOISE_VEL 0.01 
@@ -18,33 +18,40 @@ class Estimate
     public:
         Estimate(){}
         void init(Robot_info &robot_data);//初始化 X_k0_update P_k0_update
-        void update(Robot_info &robot_data,double dt);
+        void update(Robot_info &robot_data,Gait_info& gait_data,double dt);
+
+        bool init_flag = false;
     private:
+
+
         Eigen::Vector3d root_pos;  //当前位置（只有世界）
         Eigen::Vector3d root_lin_vel_body;   //当前线速度（机体）
         Eigen::Vector3d root_lin_vel_world;  //当前线速度（世界） 
         
-        Eigen::Matrix<double, 18, 1> X_k0_update; //上一时刻后验状态变量 init
-        Eigen::Matrix<double, 18, 1> X_k1_est;//当前时刻先验状态变量
-        Eigen::Matrix<double, 3, 1> U_k0_update; 
-        Eigen::Matrix<double, 18, 18> A;
-        Eigen::Matrix<double, 18, 3> B;
-        Eigen::Matrix<double, 18, 18> P_k0_update; 
-        Eigen::Matrix<double, 18, 18> P_k1_est;
-        Eigen::Matrix<double, 18, 18> Q;//预测误差的协方差矩阵
+        Vector18d X; //后验状态变量 第一次需要赋予初值
+        Vector18d X_est;//先验状态变量
+        Vector3d U;//输入
+        Matrix18d A;//状态转移矩阵
+        Matrix18x3d B;
+        Vector28d Z;//观测
+        Matrix28x18d H;//观测转移矩阵
+        
+        Matrix18d P;//后验误差协方差
+        Matrix18d P_est;//先验误差协方差
+        Matrix18d Q;//过程噪声协方差矩阵
 
-        Eigen::Matrix<double, 28, 1> Z_k0_update; //上一时刻后验
-        Eigen::Matrix<double, 28, 1> Z_k1_est;//当前时刻先验
-        Eigen::Matrix<double, 28, 18> H;
-        Eigen::Matrix<double, 28, 28> R;//观测误差的协方差矩阵
+        Matrix28d R;//观测噪声的协方差矩阵
+        Matrix28d S; //增益系数k的分母 
+        //为了方便计算 k的分子作为一部分 分母与后面的融合到一块 用llt求解加快求解速度
+        Vector28d error_z;//z-h*x先验 观测误差
+        Vector28d Serror_z; // S^-1*error_y
+        Matrix28x18d SH;// S^-1*H
 
-        Eigen::Matrix<double, 28, 28> S;
-        Eigen::Matrix<double, 28, 1> error_z; // y-yhat estimated observation
-        Eigen::Matrix<double, 28, 1> Serror_z; // S^-1*error_y
-        Eigen::Matrix<double, 28, 18> SH; // S^-1*H
+
+
         //辅助
         Eigen::Matrix<double, 3, 3> eye3; // 单位矩阵3x3 identity
-        double estimated_contacts[4]; //接触程度
+        Vector4d trust;//各个足端的置信度
 };
 
 }

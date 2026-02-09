@@ -16,7 +16,7 @@ class Manager{
         void motor_cmd(const Robot_info& robot, ros::Publisher& pub);
 
     private:
-        double kp_cmd = 60;
+        double kp_cmd = 80;
         double kd_cmd = 0.7;
         /**
          * @brief 摆动相位置控制

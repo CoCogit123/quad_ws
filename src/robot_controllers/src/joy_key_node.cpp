@@ -49,9 +49,10 @@ int main(int argc, char** argv) {
         while (read(fd, &ev, sizeof(struct input_event)) > 0) {
             if (ev.type == EV_KEY) {
                 int code = ev.code;
+                // ROS_INFO("code: %d", code);
                 int val = ev.value; // 1:按下, 0:抬起, 2:长按
 
-                if (val == 1&&code == KEY_I)
+                if (val == 1&&code == 100) //fn加delete
                 {
                     cmd_enable = !cmd_enable;
                     ROS_INFO("Cmd_Enable: %s", cmd_enable ? "ON" : "OFF");
@@ -63,8 +64,8 @@ int main(int argc, char** argv) {
                     if (code == KEY_W) target_vx = (val > 0) ?  MAX_VEL : 0.0;
                     else if (code == KEY_S) target_vx = (val > 0) ? -MAX_VEL : 0.0;
                     
-                    if (code == KEY_D) target_vy = (val > 0) ?  MAX_VEL : 0.0;
-                    else if (code == KEY_A) target_vy = (val > 0) ? -MAX_VEL : 0.0;
+                    if (code == KEY_D) target_vy = (val > 0) ?  -MAX_VEL : 0.0;
+                    else if (code == KEY_A) target_vy = (val > 0) ? MAX_VEL : 0.0;
 
                     // 类别 B: 下降沿触发切换
                     if (val == 1) {

@@ -10,7 +10,7 @@ class Swing{
     public:
         Swing(){
             k_foot_ = 0.015;
-            last_gait_type_.setZero();
+            last_gait_type_.setConstant(1);
         }
         /**
          * @brief 核心更新函数 (每控制周期调用一次)

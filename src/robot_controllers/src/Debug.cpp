@@ -52,7 +52,7 @@ namespace controllers
         //         robot.Vel_motor[i * 3], robot.Vel_motor[i * 3 + 1], robot.Vel_motor[i * 3 + 2]);
         // }
 
-        // // --- IMU & Orientation (包含计算后的 World Acc) ---
+        // --- IMU & Orientation (包含计算后的 World Acc) ---
         // printf("\033[1;33m[IMU & Orientation]\033[0m\n");
         // printf("  Body Acc   (m/s^2): [%8.4f, %8.4f, %8.4f]\n", robot.body_Acc.x(), robot.body_Acc.y(), robot.body_Acc.z());
         // printf("  Body Omega (rad/s): [%8.4f, %8.4f, %8.4f]\n", robot.body_Omega.x(), robot.body_Omega.y(), robot.body_Omega.z());
@@ -64,26 +64,42 @@ namespace controllers
 
         // // --- Kinematics ---
         printf("\033[1;33m========= [Kinematics] =========\033[0m\n");
-        // printf("\033[1;33m[Foot Positions (Body | World)]\033[0m\n");
+        printf("\033[1;33m[Foot Positions (Body | World)]\033[0m\n");
         // printf("         |      FL      |      FR      |      RL      |      RR      |\n");
         // printf("  Body  X: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(0,0), robot.body_POS(0,1), robot.body_POS(0,2), robot.body_POS(0,3));
         // printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(1,0), robot.body_POS(1,1), robot.body_POS(1,2), robot.body_POS(1,3));
         // printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(2,0), robot.body_POS(2,1), robot.body_POS(2,2), robot.body_POS(2,3));
         
-        // printf("  World X: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(0,0), robot.world_POS(0,1), robot.world_POS(0,2), robot.world_POS(0,3));
-        // printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(1,0), robot.world_POS(1,1), robot.world_POS(1,2), robot.world_POS(1,3));
-        // printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(2,0), robot.world_POS(2,1), robot.world_POS(2,2), robot.world_POS(2,3));
+        printf("  World X: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(0,0), robot.world_POS(0,1), robot.world_POS(0,2), robot.world_POS(0,3));
+        printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(1,0), robot.world_POS(1,1), robot.world_POS(1,2), robot.world_POS(1,3));
+        printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(2,0), robot.world_POS(2,1), robot.world_POS(2,2), robot.world_POS(2,3));
         printf("\033[1;33m[com info (Body | World)]\033[0m\n");
         printf("  World_Pos_Com   (m): [%8.4f, %8.4f, %8.4f]\n", robot.world_Pos_com[0], robot.world_Pos_com[1], robot.world_Pos_com[2]);
-        printf("  world_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.world_Vel_com[0], robot.world_Vel_com[1], robot.world_Vel_com[2]);
-        printf("  body_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.body_Vel_com[0], robot.body_Vel_com[1], robot.body_Vel_com[2]);
+        // printf("  world_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.world_Vel_com[0], robot.world_Vel_com[1], robot.world_Vel_com[2]);
+        // printf("  body_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.body_Vel_com[0], robot.body_Vel_com[1], robot.body_Vel_com[2]);
 
-        // --- Dynamics Constants ---
-        printf("\033[1;33m[Dynamics Constants]\033[0m\n");
-        printf("  Mass: %7.3f kg  |  Mu: %5.2f\n", robot.mass, robot.mu);
-        printf("  Structure: hx: %7.4f, hy: %7.4f\n", robot.hx, robot.hy);
-        printf("             l1: %7.4f, l2: %7.4f, l3: %7.4f\n", robot.l1, robot.l2, robot.l3);
-        printf("\033[1;33m[Inertia Matrices (Body | World)]\033[0m\n");
+        printf("\033[1;32m[Estimation State (X_est)]\033[0m\n");
+        // 1. 打印基座位置 (World Position)
+        printf("  World_Pos_Base (m): [%12.4f, %12.4f, %12.4f]\n", 
+                robot.X_est[0], robot.X_est[1], robot.X_est[2]);
+        // 2. 打印基座速度 (World Velocity)
+        printf("  World_Vel_Base(m/s): [%12.4f, %12.4f, %12.4f]\n", 
+                robot.X_est[3], robot.X_est[4], robot.X_est[5]);
+        // 3. 按照你要求的 X/Y/Z 分行格式打印 4 条腿的世界位置
+        printf("\033[1;33m[Feet World Positions (m)]\033[0m\n");
+        printf("        X: %12.4f %12.4f %12.4f %12.4f\n", 
+                robot.X_est[6], robot.X_est[9], robot.X_est[12], robot.X_est[15]); // 四条腿的 X
+        printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", 
+                robot.X_est[7], robot.X_est[10], robot.X_est[13], robot.X_est[16]); // 四条腿的 Y
+        printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", 
+                robot.X_est[8], robot.X_est[11], robot.X_est[14], robot.X_est[17]); // 四条腿的 Z
+
+        // // --- Dynamics Constants ---
+        // printf("\033[1;33m[Dynamics Constants]\033[0m\n");
+        // printf("  Mass: %7.3f kg  |  Mu: %5.2f\n", robot.mass, robot.mu);
+        // printf("  Structure: hx: %7.4f, hy: %7.4f\n", robot.hx, robot.hy);
+        // printf("             l1: %7.4f, l2: %7.4f, l3: %7.4f\n", robot.l1, robot.l2, robot.l3);
+        // printf("\033[1;33m[Inertia Matrices (Body | World)]\033[0m\n");
         // printf("  Body Inertia:             |  World Inertia:\n");
         // for (int i = 0; i < 3; ++i) {
         //     printf("  [%6.3f, %6.3f, %6.3f]  |  [%6.3f, %6.3f, %6.3f]\n",
@@ -149,34 +165,34 @@ namespace controllers
 
         printf("\n\033[1;35m==================== [gait_info] ====================\033[0m\n");
 
-        // --- 1. 步态配置 (Static Params) ---
-        printf("\033[1;33m[Configuration]\033[0m\n");
-        printf("  Gait Mode: %-10d | Cycle Time: %.3fs\n", (int)gait.Gait_mode, gait.time_gait);
-        printf("  Time Spec: Swing: %.3fs, Stand: %.3fs\n", gait.time_swing, gait.time_stand);
-        printf("  Duty Cycle (Ratio) : [%.2f, %.2f, %.2f, %.2f]\n", 
-            gait.Gait_ratio[0], gait.Gait_ratio[1], gait.Gait_ratio[2], gait.Gait_ratio[3]);
-        printf("  Phase Offset       : [%.2f, %.2f, %.2f, %.2f]\n", 
-            gait.Gait_offset[0], gait.Gait_offset[1], gait.Gait_offset[2], gait.Gait_offset[3]);
+        // // --- 1. 步态配置 (Static Params) ---
+        // printf("\033[1;33m[Configuration]\033[0m\n");
+        // printf("  Gait Mode: %-10d | Cycle Time: %.3fs\n", (int)gait.Gait_mode, gait.time_gait);
+        // printf("  Time Spec: Swing: %.3fs, Stand: %.3fs\n", gait.time_swing, gait.time_stand);
+        // printf("  Duty Cycle (Ratio) : [%.2f, %.2f, %.2f, %.2f]\n", 
+        //     gait.Gait_ratio[0], gait.Gait_ratio[1], gait.Gait_ratio[2], gait.Gait_ratio[3]);
+        // printf("  Phase Offset       : [%.2f, %.2f, %.2f, %.2f]\n", 
+        //     gait.Gait_offset[0], gait.Gait_offset[1], gait.Gait_offset[2], gait.Gait_offset[3]);
 
-        // --- 2. 运行状态 (Runtime Variables) ---
-        printf("\033[1;33m[Runtime Status]\033[0m\n");
-        printf("  Global Time : %8.3fs | Cycles(N): %d\n", gait.run_time, gait.Gait_N);
-        printf("  Global Phase: %8.4f  (0->1)\n", gait.time_gait_degree);
+        // // --- 2. 运行状态 (Runtime Variables) ---
+        // printf("\033[1;33m[Runtime Status]\033[0m\n");
+        // printf("  Global Time : %8.3fs | Cycles(N): %d\n", gait.run_time, gait.Gait_N);
+        // printf("  Global Phase: %8.4f  (0->1)\n", gait.time_gait_degree);
 
         // --- 3. 每条腿的具体状态 ---
-        printf("\033[1;33m[Leg Status & Local Phase]\033[0m\n");
-        printf("         |  State (1:S, 0:W) | Swing Phase | Stand Phase |\n");
-        for(int i=0; i<4; ++i) {
-            const char* leg_name = (i==0)?"FL":(i==1)?"FR":(i==2)?"RL":"RR";
-            const char* state_str = (gait.Gait_state[i] == 1) ? "\033[1;32mSTANCE\033[0m" : "\033[1;34mSWING \033[0m";
-            printf("  Leg %s:   [%s]      |   %8.4f  |   %8.4f  |\n", 
-                leg_name, state_str, gait.Time_swing_degree[i], gait.Time_stand_degree[i]);
-        }
+        // printf("\033[1;33m[Leg Status & Local Phase]\033[0m\n");
+        // printf("         |  State (1:S, 0:W) | Swing Phase | Stand Phase |\n");
+        // for(int i=0; i<4; ++i) {
+        //     const char* leg_name = (i==0)?"FL":(i==1)?"FR":(i==2)?"RL":"RR";
+        //     const char* state_str = (gait.Gait_state[i] == 1) ? "\033[1;32mSTANCE\033[0m" : "\033[1;34mSWING \033[0m";
+        //     printf("  Leg %s:   [%s]      |   %8.4f  |   %8.4f  |\n", 
+        //         leg_name, state_str, gait.Time_swing_degree[i], gait.Time_stand_degree[i]);
+        // }
 
-        // --- 4. 标志位与信号 ---
-        printf("\033[1;33m[Signals]\033[0m\n");
-        const char* switch_str = (gait.Gait_flag == 1) ? "\033[1;31m!! CHANGING !!\033[0m" : "Stable";
-        printf("  Flag: %s | Desired Mode: %d\n", switch_str, (int)gait.Gait_des);
+        // // --- 4. 标志位与信号 ---
+        // printf("\033[1;33m[Signals]\033[0m\n");
+        // const char* switch_str = (gait.Gait_flag == 1) ? "\033[1;31m!! CHANGING !!\033[0m" : "Stable";
+        // printf("  Flag: %s | Desired Mode: %d\n", switch_str, (int)gait.Gait_des);
 
         printf("\033[1;35m=====================================================\033[0m\n");
     }
@@ -191,11 +207,9 @@ namespace controllers
 
         printf("\n\033[1;35m==================== [swing_trajectory_info] ====================\033[0m\n");
         printf("Swing Height Setpoint: %.3f m\n\n", swing.swing_high);
-
         // 打印表头
         printf("%-4s | %-20s | %-20s | %-20s\n", "Leg", "Start (World)", "Center (World)", "End (World)");
         printf("------------------------------------------------------------------------------\n");
-
         for (int i = 0; i < 4; i++) {
             // 打印世界系下的关键点数据
             printf("\033[1;36m%-4s\033[0m | [%.2f, %.2f, %.2f] | [%.2f, %.2f, %.2f] | [%.2f, %.2f, %.2f]\n",
@@ -205,17 +219,16 @@ namespace controllers
                 swing.world_POS_end_touch(0, i),   swing.world_POS_end_touch(1, i),   swing.world_POS_end_touch(2, i));
         }
 
-        printf("\033[1;33m[Tracking in Link1 Frame]\033[0m\n");
-        printf("%-4s | %-20s | %-20s\n", "Leg", "Pos_ref (x,y,z)", "Vel_ref (vx,vy,vz)");
-        printf("------------------------------------------------------------------------------\n");
-
-        for (int i = 0; i < 4; i++) {
-            // 打印 Link1 坐标系下的实时跟踪指令
-            printf("%-4s | [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f]\n",
-                leg_names[i],
-                swing.link1_POS_foot(0, i), swing.link1_POS_foot(1, i), swing.link1_POS_foot(2, i),
-                swing.link1_VEL_foot(0, i), swing.link1_VEL_foot(1, i), swing.link1_VEL_foot(2, i));
-        }
+        // printf("\033[1;33m[Tracking in Link1 Frame]\033[0m\n");
+        // printf("%-4s | %-20s | %-20s\n", "Leg", "Pos_ref (x,y,z)", "Vel_ref (vx,vy,vz)");
+        // printf("------------------------------------------------------------------------------\n");
+        // for (int i = 0; i < 4; i++) {
+        //     // 打印 Link1 坐标系下的实时跟踪指令
+        //     printf("%-4s | [%.3f, %.3f, %.3f] | [%.3f, %.3f, %.3f]\n",
+        //         leg_names[i],
+        //         swing.link1_POS_foot(0, i), swing.link1_POS_foot(1, i), swing.link1_POS_foot(2, i),
+        //         swing.link1_VEL_foot(0, i), swing.link1_VEL_foot(1, i), swing.link1_VEL_foot(2, i));
+        // }
 
         printf("\033[1;35m=================================================================\033[0m\n");
     }

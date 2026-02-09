@@ -7,6 +7,8 @@
 #include "Swing.h"
 #include "Debug.h"
 #include "Manager.h"
+#include "Estimate.h"
+#include "Rviz_vision.h"
 //自定义消息包
 #include <custom_msgs/Motor_state.h>
 #include <custom_msgs/Motor_control.h>
@@ -24,7 +26,10 @@
 #include <sensor_msgs/Imu.h>//imu消息包
 
 using namespace controllers;//自定义工作空间
+double get_loop_interval(void);
 
+#define using_time 1  //0：使用不停止的接近现实时间  1：使用mujoco时间
+double time_mujoco;
 int main(int argc, char** argv) {
     ros::init(argc, argv, "main");
     ros::NodeHandle nh("~");
@@ -49,6 +54,8 @@ int main(int argc, char** argv) {
     ROS_INFO("Swing Solver Initialized Successfully.");
     Manager Manager_solver;
     ROS_INFO("Manager Solver Initialized Successfully.");
+    Estimate Estimate_solver;
+
     // **************************
     // 订阅节点 设置回调函数
     // **************************
@@ -93,7 +100,7 @@ int main(int argc, char** argv) {
             double yaw   = atan2(2*(q0*q3 + q1*q2), 1 - 2*(q2*q2 + q3*q3));
             robot_info.euler << roll, pitch, yaw; // 重新排布为 R,P,Y
 
-            robot_info.world_Acc = robot_info.body_Rot_world*robot_info.body_Acc - Vector3d(0, 0, 9.81);;
+            robot_info.world_Acc = robot_info.body_Rot_world*robot_info.body_Acc;
         }
     );
     //仿真作弊用
@@ -102,7 +109,9 @@ int main(int argc, char** argv) {
         10, 
         [&robot_info](const custom_msgs::Sim_info::ConstPtr& msg) {
             // 在这里可以直接访问并修改局部变量
+            time_mujoco = msg->run_time;
             robot_info.world_Pos_com = Vector3d(msg->sim_pos.x, msg->sim_pos.y, msg->sim_pos.z);
+            robot_info.world_Pos_com[2]-=0.0189;//减去足端半径 默认足端圆心为地面0处
             robot_info.body_Vel_com = Vector3d(msg->sim_twist.linear.x,msg->sim_twist.linear.y,msg->sim_twist.linear.z);
             robot_info.world_Vel_com = robot_info.body_Rot_world*robot_info.body_Vel_com;
         }
@@ -121,11 +130,10 @@ int main(int argc, char** argv) {
                 robot_info.body_omega_des = Vector3d(0.0, 0.0, msg->yaw_vel);
 
                 // 3.  Z 期望高度 z_des 
-                static double z_now = 0.15;
+                double z_now = robot_info.world_Pos_com[2];
                 double step = msg->z_des - z_now;
-                double limited_step = (step > 0.01) ? 0.01 : ((step < -0.0005) ? -0.0005 : step);
-                z_now += limited_step;
-                robot_info.z_des = z_now;
+                double limited_step = (step > 0.03) ? 0.03 : ((step < -0.03) ? -0.03 : step);
+                robot_info.z_des = z_now + limited_step;
                 
                 double dt = 0.005;
                 robot_info.euler_des[2] = robot_info.euler_des[2] + msg->yaw_vel*dt;
@@ -157,20 +165,39 @@ int main(int argc, char** argv) {
         double target_freq = 500.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.002s 目标delta_t
         ros::Rate rate(target_freq);
-        // 初始化时间记录 ros::WallTime不会被暂停
-        ros::WallTime last_start_time = ros::WallTime::now();
-        ros::WallTime current_start_time = ros::WallTime::now();
-        //运行时间
-        ros::WallTime thread_start_time = ros::WallTime::now();
-        double thread_runtime=0.0;
-        //delta_t
-        double thread_delta_t_;
+        #if using_time == 0
+            // 初始化时间记录 ros::WallTime不会被暂停
+            ros::WallTime last_start_time = ros::WallTime::now();
+            ros::WallTime current_start_time = ros::WallTime::now();
+            //运行时间
+            ros::WallTime thread_start_time = ros::WallTime::now();
+            double thread_runtime=0.0;
+            //delta_t
+            double thread_delta_t_;
+        #elif using_time == 1
+            // 初始化时间记录 ros::WallTime不会被暂停
+            double last_start_time = time_mujoco;
+            double current_start_time = time_mujoco;
+            //运行时间
+            double thread_start_time = time_mujoco;
+            double thread_runtime=0.0;
+            //delta_t
+            double thread_delta_t_;
+        #endif
         while (ros::ok()) {
+            double dddt = get_loop_interval();
             // 记录循环开始时间
-            current_start_time = ros::WallTime::now();
-            thread_delta_t_ = (current_start_time - last_start_time).toSec();
-            last_start_time = current_start_time;
-            thread_runtime = (current_start_time-thread_start_time).toSec();
+            #if using_time == 0
+                current_start_time = ros::WallTime::now();
+                thread_delta_t_ = (current_start_time - last_start_time).toSec();
+                last_start_time = current_start_time;
+                thread_runtime = (current_start_time-thread_start_time).toSec();
+            #elif using_time == 1
+                current_start_time = time_mujoco;
+                thread_delta_t_ = (current_start_time - last_start_time);
+                last_start_time = current_start_time;
+                thread_runtime = (current_start_time-thread_start_time);
+            #endif
             // ---------------------------------------------
             // 核心控制代码
             // ---------------------------------------------
@@ -178,6 +205,16 @@ int main(int argc, char** argv) {
             dynamics_solver.update(robot_info); 
             //Gait
             Gait_solver.update(gait_info,thread_runtime);
+            //Estimate
+            if(robot_info.z_des >= 0.2 && Estimate_solver.init_flag == false)//站起来再开始初始化
+            {
+                Estimate_solver.init_flag = true;
+                Estimate_solver.init(robot_info);
+                ROS_INFO("Estimate Solver Initialized Successfully.");
+            }else if(Estimate_solver.init_flag == true)
+            {
+                Estimate_solver.update(robot_info,gait_info,0.002);
+            }
             //Swing
             Swing_solver.update(swing_info,robot_info,gait_info);
             //Manager
@@ -186,12 +223,10 @@ int main(int argc, char** argv) {
             // 打印调试信息 (每1秒打印一次，避免刷屏)
             // ROS_INFO_STREAM_THROTTLE(1.0, 
             //     "\n[500Hz Thread]"
-            //     << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / thread_delta_t_) << " Hz"
-            //     << "\n  Delta T  : " << std::setprecision(6) << thread_delta_t_ << " s"
+            //     << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / dddt) << " Hz"
+            //     << "\n  Delta T  : " << std::setprecision(6) << dddt << " s"
             // );
-            Debug_robot_info(robot_info,1);
-            // Debug_gait_info(gait_info,1);
-            // Debug_swing_info(swing_info,10);
+            
             // 休眠对齐频率
             rate.sleep();
         }
@@ -204,16 +239,39 @@ int main(int argc, char** argv) {
         double target_freq = 100.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.01s 目标delta_t
         ros::Rate rate(target_freq);
-        // 初始化时间记录 ros::WallTime不会被暂停
-        ros::WallTime last_start_time = ros::WallTime::now();
-        ros::WallTime current_start_time = ros::WallTime::now();
+        #if using_time == 0
+            // 初始化时间记录 ros::WallTime不会被暂停
+            ros::WallTime last_start_time = ros::WallTime::now();
+            ros::WallTime current_start_time = ros::WallTime::now();
+            //运行时间
+            ros::WallTime thread_start_time = ros::WallTime::now();
+            double thread_runtime=0.0;
+            //delta_t
+            double thread_delta_t_;
+        #elif using_time == 1
+            // 初始化时间记录 ros::WallTime不会被暂停
+            double last_start_time = time_mujoco;
+            double current_start_time = time_mujoco;
+            //运行时间
+            double thread_start_time = time_mujoco;
+            double thread_runtime=0.0;
+            //delta_t
+            double thread_delta_t_;
+        #endif
 
-        double thread_delta_t_;//delta_t
         while (ros::ok()) {
             // 记录循环开始时间
-            current_start_time = ros::WallTime::now();
-            thread_delta_t_ = (current_start_time - last_start_time).toSec();
-            last_start_time = current_start_time;
+            #if using_time == 0
+                current_start_time = ros::WallTime::now();
+                thread_delta_t_ = (current_start_time - last_start_time).toSec();
+                last_start_time = current_start_time;
+                thread_runtime = (current_start_time-thread_start_time).toSec();
+            #elif using_time == 1
+                current_start_time = time_mujoco;
+                thread_delta_t_ = (current_start_time - last_start_time);
+                last_start_time = current_start_time;
+                thread_runtime = (current_start_time-thread_start_time);
+            #endif
 
             // ---------------------------------------------
             // 核心控制代码
@@ -234,6 +292,100 @@ int main(int argc, char** argv) {
     });
 
     // =========================================================
+    // 线程 3 (200Hz)  用于打印调试数据
+    // =========================================================
+    std::thread thread_debug([&]() {
+        ros::Duration(3.0).sleep();
+        double target_freq = 200.0;//目标hz
+        double expected_cycle_time = 1.0 / target_freq; // 0.01s 目标delta_t
+        ros::Rate rate(target_freq);
+        #if using_time == 0
+            // 初始化时间记录 ros::WallTime不会被暂停
+            ros::WallTime last_start_time = ros::WallTime::now();
+            ros::WallTime current_start_time = ros::WallTime::now();
+            //运行时间
+            ros::WallTime thread_start_time = ros::WallTime::now();
+            double thread_runtime=0.0;
+            //delta_t
+            double thread_delta_t_;
+        #elif using_time == 1
+            // 初始化时间记录 ros::WallTime不会被暂停
+            double last_start_time = time_mujoco;
+            double current_start_time = time_mujoco;
+            //运行时间
+            double thread_start_time = time_mujoco;
+            double thread_runtime=0.0;
+            //delta_t
+            double thread_delta_t_;
+        #endif
+
+        Rviz_vision rviz_vision(nh, "base_link", "odom");
+
+        while (ros::ok()) {
+            // 记录循环开始时间
+            #if using_time == 0
+                current_start_time = ros::WallTime::now();
+                thread_delta_t_ = (current_start_time - last_start_time).toSec();
+                last_start_time = current_start_time;
+                thread_runtime = (current_start_time-thread_start_time).toSec();
+            #elif using_time == 1
+                current_start_time = time_mujoco;
+                thread_delta_t_ = (current_start_time - last_start_time);
+                last_start_time = current_start_time;
+                thread_runtime = (current_start_time-thread_start_time);
+            #endif
+
+            // ---------------------------------------------
+            // 核心控制代码
+            // ---------------------------------------------
+
+            /**************结构体数据调试****************/
+            // Debug_robot_info(robot_info,1);
+            // Debug_gait_info(gait_info,5);
+            // Debug_swing_info(swing_info,5);
+            
+            /**************rviz显示调试****************/
+            static int rviz_count = 0;
+            
+            static std::vector<double> joint_angles_vec(12);
+            if (++rviz_count >= 4) { // 200Hz / 4 = 50Hz，足够平滑了
+                for (int i = 0; i < 12; ++i) {
+                    joint_angles_vec[i] = robot_info.Pos_motor[i];
+                    if(i == 1 || i == 4 || i == 7 || i == 10) //关节2偏移45°
+                    {
+                        joint_angles_vec[i] -=0.785;
+                    }
+                    if(i == 2 || i == 5 || i == 8 || i == 11) //关节3偏移-135°
+                    {
+                        joint_angles_vec[i] +=2.355;
+                    }
+                }
+                rviz_vision.updateRobotState(robot_info.world_Pos_com,robot_info.quat_base,joint_angles_vec);
+                for(int i=0;i<4;i++)
+                {
+                    //起点 (绿色) 中点 (蓝色) 落足点 (红色)
+                    rviz_vision.visualizeSwingLeg(swing_info.world_POS_start_touch.col(i),
+                                                swing_info.world_POS_mid_touch.col(i),
+                                                swing_info.world_POS_end_touch.col(i),
+                                                i);
+                }
+                rviz_vision.point_to_link(swing_info.link1_POS_foot.col(0),"leg1_link1",30);
+                rviz_vision.point_to_link(swing_info.link1_POS_foot.col(1),"leg2_link1",31);
+                rviz_vision.point_to_link(swing_info.link1_POS_foot.col(2),"leg3_link1",32);
+                rviz_vision.point_to_link(swing_info.link1_POS_foot.col(3),"leg4_link1",33);
+
+                // rviz_vision.point_to_link(swing_info.world_POS_foot.col(0),"odom",30);
+                // rviz_vision.point_to_link(swing_info.world_POS_foot.col(1),"odom",31);
+                // rviz_vision.point_to_link(swing_info.world_POS_foot.col(2),"odom",32);
+                // rviz_vision.point_to_link(swing_info.world_POS_foot.col(3),"odom",33);
+            }
+
+            // 休眠对齐频率
+            rate.sleep();
+        }
+    });
+
+    // =========================================================
     // 主线程逻辑
     // =========================================================
     
@@ -245,7 +397,33 @@ int main(int argc, char** argv) {
     // 等待线程安全退出
     if (thread_high.joinable()) thread_high.join();
     if (thread_low.joinable()) thread_low.join();
+    if (thread_debug.joinable()) thread_debug.join();
 
     ROS_INFO("Main Node Exited Cleanly.");
     return 0;
+}
+
+double get_loop_interval(void) {
+    // 使用 static 变量存储上一次的时间点，函数结束后不会被销毁
+    static auto last_time = std::chrono::steady_clock::now();
+    static bool first_run = true;
+
+    auto current_time = std::chrono::steady_clock::now();
+    
+    // 如果是第一次运行，初始化时间并返回 0
+    if (first_run) {
+        last_time = current_time;
+        first_run = false;
+        return 0.0;
+    }
+
+    // 计算差值
+    std::chrono::duration<double> diff = current_time - last_time;
+    double delta_t = diff.count();
+
+    // 更新静态变量，供下一次循环使用
+    last_time = current_time;
+
+    // 防御性处理，防止由于高频调用导致的极小值或 0
+    return (delta_t > 0.0) ? delta_t : 1e-6; 
 }

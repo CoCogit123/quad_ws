@@ -206,7 +206,8 @@ void Dynamics::update(Robot_info& robot) {
      * @param robot 引用传入robot_info，读取l1 l2 l3 hx hy 期望高度和欧拉角 默认偏移量并填入计算结果
      * @endif 导出3*1向量 足端相对于第一关节坐标系的坐标
      */
-    Vector3d Dynamics::posture_to_footpos(Robot_info& robot,int number) {
+    Vector3d Dynamics::posture_to_footpos(Robot_info& robot,int number) 
+    {
         Eigen::Vector3d Op_O;
         Op_O << 0, 0, -robot.z_des;
         //确认方向
