@@ -12,6 +12,7 @@ namespace controllers {
     using Vector4d = Eigen::Vector4d;
     using Vector6d = Eigen::Matrix<double, 6, 1>;
     using Vector12d = Eigen::Matrix<double, 12, 1>;
+    using Vector13d = Eigen::Matrix<double, 13, 1>;
     using Vector18d = Eigen::Matrix<double, 18, 1>;
     using Vector19d = Eigen::Matrix<double, 19, 1>; // Pinocchio中浮动基q是7维(4元数+3位置)
     using Vector4i = Eigen::Vector4i; //int
@@ -24,6 +25,8 @@ namespace controllers {
     using Matrix18x3d = Eigen::Matrix<double, 18, 3>;
     using Matrix28d = Eigen::Matrix<double, 28, 28>;
     using Matrix28x18d = Eigen::Matrix<double, 28, 18>;
+    using Matrix13x13d = Eigen::Matrix<double, 13, 13>;
+    using Matrix13x12d = Eigen::Matrix<double, 13, 12>;
     /**
      * @brief 机器人信息结构体
      * 通用数据
@@ -216,6 +219,8 @@ namespace controllers {
         double torque_kd = 1.0;
     };
 }
+
+
 
 #endif
 

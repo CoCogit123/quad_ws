@@ -65,7 +65,7 @@ link_directories(${PINOCCHIO_LIBRARY_DIRS})
 # add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
 # target_link_libraries(test_gait ${catkin_LIBRARIES})
 
-add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp src/Rviz_vision.cpp src/Estimate.cpp)
+add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp src/Rviz_vision.cpp src/Estimate.cpp src/Mpc.h)
 add_dependencies(main ${catkin_EXPORTED_TARGETS}) 
 target_link_libraries(main ${catkin_LIBRARIES})
 target_link_libraries(main ${PINOCCHIO_LIBRARIES})

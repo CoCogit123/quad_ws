@@ -8,6 +8,7 @@
 #include "Debug.h"
 #include "Manager.h"
 #include "Estimate.h"
+#include "Mpc.h"
 #include "Rviz_vision.h"
 //自定义消息包
 #include <custom_msgs/Motor_state.h>
