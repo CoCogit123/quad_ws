@@ -56,19 +56,23 @@ include_directories(
   ${PINOCCHIO_INCLUDE_DIRS} #pinocchio
   ${catkin_INCLUDE_DIRS}#链接包的include
   ${EIGEN3_INCLUDE_DIR}#eigen3
+  ${WORKSPACE_PATH}/third_party/qpOASES/include #qpOASES
 )
 #指定pinocchio库文件的路径
 link_directories(${PINOCCHIO_LIBRARY_DIRS})
+#指定qpOASES库文件的路径
+link_directories(${WORKSPACE_PATH}/third_party/qpOASES/lib)
 
 #添加可执行程序
 # add_executable(test_gait test/test_gait.cpp )
 # add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
 # target_link_libraries(test_gait ${catkin_LIBRARIES})
 
-add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp src/Rviz_vision.cpp src/Estimate.cpp src/Mpc.h)
+add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp src/Rviz_vision.cpp src/Estimate.cpp src/Mpc.cpp)
 add_dependencies(main ${catkin_EXPORTED_TARGETS}) 
 target_link_libraries(main ${catkin_LIBRARIES})
-target_link_libraries(main ${PINOCCHIO_LIBRARIES})
+target_link_libraries(main ${PINOCCHIO_LIBRARIES})#pinocchio的库文件
+target_link_libraries(main libqpOASES.a)#qpOASES的库文件
 
 add_executable(joy_key_node src/joy_key_node.cpp)
 target_link_libraries(joy_key_node ${catkin_LIBRARIES})
