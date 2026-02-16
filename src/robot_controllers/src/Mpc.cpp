@@ -1,9 +1,9 @@
 #include "Mpc.h"
 #include "Dynamics.h"
-
+#include <ros/ros.h>
 namespace controllers {
 
-void Mpc::init(Robot_info& robot,Eigen::VectorXd &q_weights_, Eigen::VectorXd &r_weights_)
+void Mpc::init(Robot_info& robot,ColVec<13> &q_weights_, ColVec<12> &r_weights_)
 {
     // =========================================================
     // 离散的状态方程
@@ -33,6 +33,7 @@ void Mpc::init(Robot_info& robot,Eigen::VectorXd &q_weights_, Eigen::VectorXd &r
     }
     //约束矩阵C
     RowMat<5, 3> C_i;
+    C_i.setZero();
     C_i(0,0) = -1; C_i(0,2) = robot.mu; //第一行
     C_i(1,0) =  1; C_i(1,2) = robot.mu; //第二行
     C_i(2,1) = -1; C_i(2,2) = robot.mu; //第三行
@@ -65,20 +66,55 @@ void Mpc::init(Robot_info& robot,Eigen::VectorXd &q_weights_, Eigen::VectorXd &r
     // === qpOASES 设置 ===
     options.setToMPC(); // 启用热启动模式
     options.printLevel = qpOASES::PL_NONE; // 关闭所有打印 (实时性关键)
-    // qp_options.enableRegularisation = qpOASES::BT_TRUE; // 如果矩阵奇异可开启正则化
+    options.enableRegularisation = qpOASES::BT_TRUE; // 如果矩阵奇异可开启正则化
     qp_solver.setOptions(options);
 }
-
-
 
 void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
 {
     // =========================================================
+    // Step 0: 当前状态以及期望状态  [姿态(3) 位置(3) 角速度(3) 线速度(3) g(1)]  共13
+    // =========================================================
+    /************** 当前状态x_now **************/
+    x_now.segment(0,3) = robot.euler;
+    x_now.segment(3,3) = robot.world_Pos_com;
+    x_now.segment(6,3) = robot.body_Rot_world * robot.body_Omega;
+    x_now.segment(9,3) = robot.world_Vel_com;
+    x_now[12] = -9.81;
+    /************** 期望状态X_des 13*10**************/
+    for (int i = 0; i < HORIZON; ++i) {
+        static ColVec<3> pos_des_k1 = robot.world_Pos_com;
+        if( i == 0 ) //k=1的期望位置
+        {
+            // pos_des_k1 = protect_degree * pos_des_k1 + ( 1 - protect_degree ) * robot.world_Pos_com + robot.world_Vel_com * dt;
+            pos_des_k1.setZero();
+            pos_des_k1[2] = robot.z_des;
+            X_des.segment(3,3) = pos_des_k1; //位置
+            X_des.segment(0,3).setZero();//姿态roll pitch 为0
+            X_des(2) = robot.euler[2];//姿态 -- 直接为当前姿态
+            X_des.segment(6,3) = robot.world_omega_des;//角速度
+            X_des.segment(9,3) = robot.world_Vel_des;//线速度
+            X_des[12] = -9.81;
+        }else
+        {
+            // 计算当前步的时间偏移
+            double t = (i + 1) * dt;
+
+            X_des.segment(i*13+0,3) = robot.euler + robot.world_omega_des*t;//姿态
+            X_des.segment(i*13+3,3) = pos_des_k1 + robot.world_Vel_des*t;//位置
+            X_des[i*13+5] = robot.z_des;//z(保持期望高度)
+            X_des.segment(i*13+0,3) = robot.world_omega_des;//角速度
+            X_des.segment(i*13+0,3) = robot.world_Vel_des;//线速度
+            X_des[i*13+12] = -9.81;
+        }
+    }
+
+    // =========================================================
     // Step 1: 离散的状态方程
     // =========================================================
     /************** A_dt变化部分 **************/
-    double cos_yaw = cos(robot.euler_des[2]);
-    double sin_yaw = sin(robot.euler_des[2]);
+    double cos_yaw = cos(robot.euler[2]);
+    double sin_yaw = sin(robot.euler[2]);
     //旋转矩阵的转置
     Eigen::Matrix3d ang_vel_to_rpy_rate;
     ang_vel_to_rpy_rate << cos_yaw, sin_yaw, 0,
@@ -98,6 +134,8 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
         B_dt.block<3, 3>(9, 3 * i) =
                 (1 / robot.mass) * Eigen::Matrix3d::Identity() * dt;
     }
+
+
     // =========================================================
     // Step 2: 预测状态方程
     // =========================================================
@@ -159,20 +197,21 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     // =========================================================
     // Step 5: QP问题求解
     // =========================================================
-    int nWSR = 100; // 最大工作集迭代次数，热启动通常只需 5-10 次
+    qpOASES::int_t nWSR = 1000; // 最大工作集迭代次数，热启动通常只需 5-10 次
     qpOASES::returnValue ret;
     if(first_run) {
         // 冷启动：初始化矩阵结构
         ret = qp_solver.init(hessian.data(), gradient.data(), C.data(), 
-                             nullptr, nullptr, // 变量本身无边界 (lb, ub)
-                             lb.data(), ub.data(), // 约束边界 (lbA, ubA)
+                             (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
+                             lb.data(), ub.data(), 
                              nWSR);
         first_run = false;
+        ROS_INFO("qp_solver init success ret = %d",ret);
     } else {
         // 热启动：利用上一帧的解加速
         // 关键：由于我们定义 H, C 为 RowMajor，这里传 .data() 是安全的，且无拷贝
         ret = qp_solver.hotstart(hessian.data(), gradient.data(), C.data(), 
-                                 nullptr, nullptr, 
+                                 (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
                                  lb.data(), ub.data(), 
                                  nWSR);
         
@@ -180,7 +219,7 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
         if(ret != qpOASES::SUCCESSFUL_RETURN) {
             qp_solver.reset();
             qp_solver.init(hessian.data(), gradient.data(), C.data(), 
-                           nullptr, nullptr, 
+                           (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
                            lb.data(), ub.data(), 
                            nWSR);
         }
@@ -188,10 +227,13 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     //提取结果
     if(ret == qpOASES::SUCCESSFUL_RETURN) {
         qp_solver.getPrimalSolution(qp_solution.data());
+        robot.mpc_force = qp_solution.head(12);
     } else {
         // 错误处理：保持上一帧的力或设为0
-        std::cerr << "MPC failed!" << std::endl;
+        // std::cerr << "MPC failed!" << std::endl;
+        ROS_INFO("qp_solver failed ret = %d",ret);
     }
+
 }
 
 

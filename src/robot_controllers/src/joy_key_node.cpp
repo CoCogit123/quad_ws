@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
     msg.com_vel.y = 0.0;
     msg.com_vel.z = 0.0;
     msg.mode = 0;
+    msg.mpc_use = 0;
 
     // --- 速度控制参数 ---
     double target_vx = 0.0, target_vy = 0.0;
@@ -72,6 +73,10 @@ int main(int argc, char** argv) {
                         if (code == KEY_O) {
                             msg.run_flag = !msg.run_flag;
                             ROS_INFO("Run Flag: %s", msg.run_flag ? "ON" : "OFF");
+                        }
+                        if (code == KEY_M) {
+                            msg.mpc_use = !msg.mpc_use;
+                            ROS_INFO("mpc_use Flag: %s", msg.mpc_use ? "ON" : "OFF");
                         }
                         else if (code == KEY_Z) msg.mode = 0;
                         else if (code == KEY_X) msg.mode = 1;

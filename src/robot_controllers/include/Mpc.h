@@ -13,12 +13,11 @@
 // =================== 类型定义 (关键优化) ===================
 // 强制使用 RowMajor (行优先)，与 qpOASES 内存布局一致，实现 .data() 指针直传
 //矩阵
-using Qptype = qpOASES::real_t;
-template <int R, int C> using RowMat = Eigen::Matrix<Qptype, R, C, Eigen::RowMajor>;
-using MatrixXd = Eigen::Matrix<Qptype, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+template <int R, int C> using RowMat = Eigen::Matrix<double, R, C, Eigen::RowMajor>;
+using MatrixXd = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 //向量（列向量） 向量没区别 还是正常模式进行计算 
-template <int N> using ColVec = Eigen::Matrix<Qptype, N, 1>;
-using VectorXd = Eigen::Matrix<Qptype, Eigen::Dynamic, 1>;
+template <int N> using ColVec = Eigen::Matrix<double, N, 1>;
+using VectorXd = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 // =================== 配置参数 ===================
 constexpr int HORIZON = 10;      // 预测步长 (MIT通常用10)
 
@@ -30,17 +29,18 @@ namespace controllers {
     class Mpc
     {
         public:
-            Mpc()//只初始化矩阵
+            Mpc() : qp_solver(12 * HORIZON, 20 * HORIZON)//只初始化矩阵
             {
                 // === 2. Eigen 内存预分配 ===
                 A_qp.resize(13 * HORIZON, 13);
                 B_qp.resize(13 * HORIZON, 12 * HORIZON);
                 hessian.resize(12 * HORIZON, 12 * HORIZON);
-                C.resize(HORIZON, 12 * HORIZON);
+                C.resize(20 * HORIZON, 12 * HORIZON);
                 X_des.resize(13 * HORIZON);
                 gradient.resize(12 * HORIZON);
                 lb.resize(20 * HORIZON);
                 ub.resize(20 * HORIZON);
+                qp_solution.resize(12 * HORIZON);
 
                 X_des.setZero();
                 B_dt.setZero();
@@ -50,21 +50,28 @@ namespace controllers {
                 gradient.setZero();
                 C.setZero();
                 x_now.setZero();
+
+            
             }
-            ~Mpc();
+            ~Mpc(){}
 
             // 初始化权重和求解器
-            void init(Robot_info& robot, VectorXd &q_weights_, VectorXd &r_weights_);
+            void init(Robot_info& robot, ColVec<13> &q_weights_, ColVec<12> &r_weights_);
 
             // 核心计算函数
             void update(Robot_info& robot,Gait_info& gait,double dt);
 
-        private:
-            double f_max = 150;
+            bool mpc_init_flag = false;
+            VectorXd qp_solution;
 
-            // 动力学矩阵
             ColVec<13> x_now;//当前状态（1周期）
             VectorXd X_des;//期望状态（HORIZON周期）
+
+        private:
+            double f_max = 150.0;
+            double protect_degree = 1.0;//递推期望轨迹的保护堵转系数 越大越想改变状态
+
+            // 动力学矩
             RowMat<13,13> A_dt; // 离散 A 一个周期内
             RowMat<13,12> B_dt; // 离散 B
 
@@ -85,12 +92,11 @@ namespace controllers {
             Eigen::DiagonalMatrix<double, 12 * HORIZON> R;
 
             // qpOASES 实例
-            qpOASES::QProblem qp_solver;
+            qpOASES::SQProblem qp_solver;
             qpOASES::Options options;
             bool first_run = true;
-            Eigen::VectorXd qp_solution;
+            
     };
-
 
 }
 

@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     Manager Manager_solver;
     ROS_INFO("Manager Solver Initialized Successfully.");
     Estimate Estimate_solver;
-
+    Mpc Mpc_solver;
     // **************************
     // 订阅节点 设置回调函数
     // **************************
@@ -136,7 +136,17 @@ int main(int argc, char** argv) {
                 double limited_step = (step > 0.03) ? 0.03 : ((step < -0.03) ? -0.03 : step);
                 robot_info.z_des = z_now + limited_step;
                 
-                double dt = 0.005;
+                static ros::Time last_time = ros::Time::now(); // 仅在第一次调用时初始化
+                ros::Time current_time = ros::Time::now();
+                // 计算两次回调之间的实际时间差
+                double dt = (current_time - last_time).toSec();
+                // 更新时间戳供下次使用
+                last_time = current_time;
+                // --- 鲁棒性保护 ---
+                // 第一次运行或间隔过长（比如程序卡住后恢复）时，给一个合理的默认值
+                if (dt <= 0.0 || dt > 0.5) {
+                    dt = 0.02; // 假设期望频率是 50Hz，则设为 0.02s
+                }
                 robot_info.euler_des[2] = robot_info.euler_des[2] + msg->yaw_vel*dt;
 
                 // 5. 读取 mode 并转换为步态枚举存储
@@ -146,6 +156,9 @@ int main(int argc, char** argv) {
                 {
                     gait_info.Gait_flag=1;
                 }
+
+                //6，mpc是否使用
+                robot_info.mpc_use = msg->mpc_use;
             }else 
             {
                 robot_info.body_Vel_des.setZero();
@@ -186,7 +199,7 @@ int main(int argc, char** argv) {
             double thread_delta_t_;
         #endif
         while (ros::ok()) {
-            double dddt = get_loop_interval();
+            // double dddt = get_loop_interval();
             // 记录循环开始时间
             #if using_time == 0
                 current_start_time = ros::WallTime::now();
@@ -234,11 +247,11 @@ int main(int argc, char** argv) {
     });
 
     // =========================================================
-    // 线程 2 (100Hz) 
+    // 线程 2 (200Hz) 
     // =========================================================
     std::thread thread_low([&]() {
-        double target_freq = 100.0;//目标hz
-        double expected_cycle_time = 1.0 / target_freq; // 0.01s 目标delta_t
+        double target_freq = 200.0;//目标hz
+        double expected_cycle_time = 1.0 / target_freq; // 0.005s 目标delta_t
         ros::Rate rate(target_freq);
         #if using_time == 0
             // 初始化时间记录 ros::WallTime不会被暂停
@@ -261,6 +274,7 @@ int main(int argc, char** argv) {
         #endif
 
         while (ros::ok()) {
+            double dddt = get_loop_interval();
             // 记录循环开始时间
             #if using_time == 0
                 current_start_time = ros::WallTime::now();
@@ -277,15 +291,127 @@ int main(int argc, char** argv) {
             // ---------------------------------------------
             // 核心控制代码
             // ---------------------------------------------
-             
-            // ...
+            if( Estimate_solver.init_flag == true )//估计结束可以初始化和计算
+            {
+                if(Mpc_solver.mpc_init_flag == false)
+                {
+                    Vector13d Q;
+                    Q << 25, 25, 10, 5, 5, 100, 0, 0, 0.0, 0.0, 0.0, 20, 0; 
+                    Vector12d R;
+                    R.setConstant(0.00005);
+                    Mpc_solver.init(robot_info,Q,R);
+                    Mpc_solver.mpc_init_flag = true;
+                    ROS_INFO("Mpc Solver Initialized Successfully.");
+                }else{
+                    Mpc_solver.update(robot_info,gait_info,0.005);
+                }
+            }
+
+            // ---------------------------------------------
+            // 调试
+            // ---------------------------------------------
+            static ros::Time last_print_time = ros::Time::now(); // 静态变量，只初始化一次
+            ros::Time now = ros::Time::now();
+            // 检查时间间隔是否超过 0.1 秒
+            if ((now - last_print_time).toSec() >= 1) { // 
+                
+                // 安全检查
+                if (Mpc_solver.qp_solution.size() >= 12) {
+                    // 提取前 12 个元素，避免重复调用 head()
+                    Eigen::VectorXd f = Mpc_solver.qp_solution.head(12);
+
+                    // 设置打印格式：固定小数点，保留3位
+                    std::cout << std::fixed << std::setprecision(3);
+
+                    // 打印表头 (时间 + 腿名称)
+                    std::cout << "\n\033[1;33m[QP ] " << "\033[0m" << std::endl;
+                    std::cout << "      | " 
+                            << std::setw(9) << "FL" << " | " 
+                            << std::setw(9) << "FR" << " | " 
+                            << std::setw(9) << "RL" << " | " 
+                            << std::setw(9) << "RR" << " |" << std::endl;
+                    std::cout << "-------------------------------------------------" << std::endl;
+
+                    // 定义行名
+                    const char* axis_names[3] = {"Fx (N)", "Fy (N)", "Fz (N)"};
+
+                    // 循环打印 3 行 (Fx, Fy, Fz)
+                    for (int axis = 0; axis < 3; ++axis) {
+                        std::cout << std::setw(5) << axis_names[axis] << " | ";
+                        
+                        // 循环打印 4 列 (FL, FR, RL, RR)
+                        for (int leg = 0; leg < 4; ++leg) {
+                            // 索引逻辑：第 leg 条腿的第 axis 分量
+                            // 假设排列为 [FLx, FLy, FLz, FRx, FRy, FRz ...]
+                            int index = leg * 3 + axis; 
+                            
+                            double val = f(index);
+                            
+                            // 根据数值正负设置颜色 (可选：正数绿色，负数红色，0灰色)
+                            if(std::abs(val) < 0.001) std::cout << "\033[90m"; // 灰色
+                            else if(val >= 0)         std::cout << "\033[32m"; // 绿色
+                            else                      std::cout << "\033[31m"; // 红色
+
+                            std::cout << std::setw(9) << val << "\033[0m | ";
+                        }
+                        std::cout << std::endl;
+                    }
+                    std::cout << "=================================================" << std::endl;
+
+                } else {
+                    std::cout << "[QP Result] Error: Solution size too small (" 
+                            << Mpc_solver.qp_solution.size() << ")" << std::endl;
+                }
+
+                // 定义状态名称 (根据 MPC 标准 13 维状态)
+                const char* state_names[13] = {
+                    "Roll (rad) ", "Pitch (rad)", "Yaw (rad)  ",  // 6-8 (或者欧拉角)
+                    "Pos X (m)  ", "Pos Y (m)  ", "Pos Z (m)  ",  // 0-2
+                    "Omg X (r/s)", "Omg Y (r/s)", "Omg Z (r/s)",  // 9-11
+                    "Vel X (m/s)", "Vel Y (m/s)", "Vel Z (m/s)",  // 3-5
+                    "Gravity (g)"                                  // 12
+                };
+
+                std::cout << "\n\033[1;36m[State Tracking] x_now vs X_des(k=0)\033[0m" << std::endl;
+                std::cout << "Idx | Name        |     x_now |     X_des |      Diff |" << std::endl;
+                std::cout << "--------------------------------------------------------" << std::endl;
+
+                // 遍历 13 个状态
+                for (int i = 0; i < 13; ++i) {
+                    double val_now = Mpc_solver.x_now(i);
+                    // 安全检查：防止 X_des 为空
+                    double val_des = Mpc_solver.X_des(i);
+
+                    if(i>=0&&i<=2) { val_now*=57.32; val_des*=57.32;}
+                    double diff = val_des - val_now;
+
+                    // 设置每一行的颜色：
+                    // 如果误差很小(灰色)，误差中等(白色)，误差大(红色/黄色)
+                    std::string color = "\033[0m"; // 默认白色
+                    if (std::abs(diff) < 0.01) color = "\033[90m";       // 灰色 (Tracking很好)
+                    else if (std::abs(diff) > 0.1) color = "\033[1;31m"; // 红色加粗 (偏差大)
+                    else if (std::abs(diff) > 0.05) color = "\033[33m";  // 黄色 (有偏差)
+
+                    std::cout << std::fixed << std::setprecision(4);
+                    
+                    std::cout << std::setw(3) << i << " | " 
+                            << state_names[i] << " | " 
+                            << color
+                            << std::setw(9) << val_now << " | " 
+                            << std::setw(9) << val_des << " | " 
+                            << std::setw(9) << diff << "\033[0m |" << std::endl;
+                }
+                std::cout << "========================================================" << std::endl;
+
+                last_print_time = now;
+            }
 
             // 打印调试信息 (每1秒打印一次，避免刷屏)
-            // ROS_INFO_STREAM_THROTTLE(1.0, 
-            //     "\n[100Hz Thread]"
-            //     << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / thread_delta_t_) << " Hz"
-            //     << "\n  Delta T  : " << std::setprecision(6) << thread_delta_t_ << " s"
-            // );
+            ROS_INFO_STREAM_THROTTLE(1.0, 
+                "\n[100Hz Thread]"
+                << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / dddt) << " Hz"
+                << "\n  Delta T  : " << std::setprecision(6) << dddt << " s"
+            );
 
             // 休眠对齐频率
             rate.sleep();

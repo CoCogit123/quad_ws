@@ -15,7 +15,14 @@ namespace controllers {
             //swing
             swing_pos_control(robot,gait,swing);
             //stand
-            stand_pos_control(robot,gait); 
+            if( robot.mpc_use == 0 )
+            {
+                stand_pos_control(robot,gait); 
+            }else
+            {
+                stand_torque_control(robot,gait); 
+            }
+            
         }
     }
 
@@ -101,6 +108,21 @@ namespace controllers {
                 robot.Kp_motor.segment<3>(i*3).setConstant(kp_cmd);
                 robot.Kd_motor.segment<3>(i*3).setConstant(kd_cmd);
                 robot.Torque_motor.segment<3>(i*3).setZero();
+            }
+        }
+    }
+
+    void Manager::stand_torque_control(Robot_info &robot,Gait_info &gait)
+    {
+        for(int i=0;i<4;i++)
+        { 
+            if(gait.Gait_state[i]==1)
+            {
+                robot.Pos_motor_cmd.segment<3>(i*3).setZero();
+                robot.Vel_motor_cmd.segment<3>(i*3).setZero();
+                robot.Kp_motor.segment<3>(i*3).setZero();
+                robot.Kd_motor.segment<3>(i*3).setZero();
+                robot.Torque_motor.segment<3>(i*3) = -(robot.J_foot[i].block<3,3>(0,6+i*3).transpose())*robot.mpc_force.segment<3>(i*3);
             }
         }
     }

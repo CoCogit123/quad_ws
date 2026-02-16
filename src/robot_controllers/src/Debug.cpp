@@ -38,11 +38,11 @@ namespace controllers
         //     robot.world_omega_des.x(), robot.world_omega_des.y(), robot.world_omega_des.z());
 
         // --- 3. 姿态与高度指令 (State Setpoints - Integrated) ---
-        printf("\033[1;33m[Postural Setpoints (Integrated)]\033[0m\n");
-        // 将欧拉角转为角度打印，更符合直觉
-        printf("  Euler Des (deg): R:%7.2f, P:%7.2f, Y:%7.2f\n", 
-            robot.euler_des.x() * 57.3, robot.euler_des.y() * 57.3, robot.euler_des.z() * 57.3);
-        printf("  Height Des (m) : %8.4f  (Offset to Ground)\n", robot.z_des);
+        // printf("\033[1;33m[Postural Setpoints (Integrated)]\033[0m\n");
+        // // 将欧拉角转为角度打印，更符合直觉
+        // printf("  Euler Des (deg): R:%7.2f, P:%7.2f, Y:%7.2f\n", 
+        //     robot.euler_des.x() * 57.3, robot.euler_des.y() * 57.3, robot.euler_des.z() * 57.3);
+        // printf("  Height Des (m) : %8.4f  (Offset to Ground)\n", robot.z_des);
 
         // // --- Motor Data (按照四足机器人腿部逻辑排列) ---
         // printf("\033[1;33m[Motor States (Pos | Vel)]\033[0m\n");
@@ -63,36 +63,36 @@ namespace controllers
         //     robot.world_Acc.x(), robot.world_Acc.y(), robot.world_Acc.z());
 
         // // --- Kinematics ---
-        printf("\033[1;33m========= [Kinematics] =========\033[0m\n");
-        printf("\033[1;33m[Foot Positions (Body | World)]\033[0m\n");
+        // printf("\033[1;33m========= [Kinematics] =========\033[0m\n");
+        // printf("\033[1;33m[Foot Positions (Body | World)]\033[0m\n");
         // printf("         |      FL      |      FR      |      RL      |      RR      |\n");
         // printf("  Body  X: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(0,0), robot.body_POS(0,1), robot.body_POS(0,2), robot.body_POS(0,3));
         // printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(1,0), robot.body_POS(1,1), robot.body_POS(1,2), robot.body_POS(1,3));
         // printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.body_POS(2,0), robot.body_POS(2,1), robot.body_POS(2,2), robot.body_POS(2,3));
         
-        printf("  World X: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(0,0), robot.world_POS(0,1), robot.world_POS(0,2), robot.world_POS(0,3));
-        printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(1,0), robot.world_POS(1,1), robot.world_POS(1,2), robot.world_POS(1,3));
-        printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(2,0), robot.world_POS(2,1), robot.world_POS(2,2), robot.world_POS(2,3));
-        printf("\033[1;33m[com info (Body | World)]\033[0m\n");
-        printf("  World_Pos_Com   (m): [%8.4f, %8.4f, %8.4f]\n", robot.world_Pos_com[0], robot.world_Pos_com[1], robot.world_Pos_com[2]);
+        // printf("  World X: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(0,0), robot.world_POS(0,1), robot.world_POS(0,2), robot.world_POS(0,3));
+        // printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(1,0), robot.world_POS(1,1), robot.world_POS(1,2), robot.world_POS(1,3));
+        // printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", robot.world_POS(2,0), robot.world_POS(2,1), robot.world_POS(2,2), robot.world_POS(2,3));
+        // printf("\033[1;33m[com info (Body | World)]\033[0m\n");
+        // printf("  World_Pos_Com   (m): [%8.4f, %8.4f, %8.4f]\n", robot.world_Pos_com[0], robot.world_Pos_com[1], robot.world_Pos_com[2]);
         // printf("  world_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.world_Vel_com[0], robot.world_Vel_com[1], robot.world_Vel_com[2]);
         // printf("  body_Vel_com   (m/s): [%8.4f, %8.4f, %8.4f]\n", robot.body_Vel_com[0], robot.body_Vel_com[1], robot.body_Vel_com[2]);
 
-        printf("\033[1;32m[Estimation State (X_est)]\033[0m\n");
-        // 1. 打印基座位置 (World Position)
-        printf("  World_Pos_Base (m): [%12.4f, %12.4f, %12.4f]\n", 
-                robot.X_est[0], robot.X_est[1], robot.X_est[2]);
-        // 2. 打印基座速度 (World Velocity)
-        printf("  World_Vel_Base(m/s): [%12.4f, %12.4f, %12.4f]\n", 
-                robot.X_est[3], robot.X_est[4], robot.X_est[5]);
-        // 3. 按照你要求的 X/Y/Z 分行格式打印 4 条腿的世界位置
-        printf("\033[1;33m[Feet World Positions (m)]\033[0m\n");
-        printf("        X: %12.4f %12.4f %12.4f %12.4f\n", 
-                robot.X_est[6], robot.X_est[9], robot.X_est[12], robot.X_est[15]); // 四条腿的 X
-        printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", 
-                robot.X_est[7], robot.X_est[10], robot.X_est[13], robot.X_est[16]); // 四条腿的 Y
-        printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", 
-                robot.X_est[8], robot.X_est[11], robot.X_est[14], robot.X_est[17]); // 四条腿的 Z
+        // printf("\033[1;32m[Estimation State (X_est)]\033[0m\n");
+        // // 1. 打印基座位置 (World Position)
+        // printf("  World_Pos_Base (m): [%12.4f, %12.4f, %12.4f]\n", 
+        //         robot.X_est[0], robot.X_est[1], robot.X_est[2]);
+        // // 2. 打印基座速度 (World Velocity)
+        // printf("  World_Vel_Base(m/s): [%12.4f, %12.4f, %12.4f]\n", 
+        //         robot.X_est[3], robot.X_est[4], robot.X_est[5]);
+        // // 3. 按照你要求的 X/Y/Z 分行格式打印 4 条腿的世界位置
+        // printf("\033[1;33m[Feet World Positions (m)]\033[0m\n");
+        // printf("        X: %12.4f %12.4f %12.4f %12.4f\n", 
+        //         robot.X_est[6], robot.X_est[9], robot.X_est[12], robot.X_est[15]); // 四条腿的 X
+        // printf("        Y: %12.4f %12.4f %12.4f %12.4f\n", 
+        //         robot.X_est[7], robot.X_est[10], robot.X_est[13], robot.X_est[16]); // 四条腿的 Y
+        // printf("        Z: %12.4f %12.4f %12.4f %12.4f\n", 
+        //         robot.X_est[8], robot.X_est[11], robot.X_est[14], robot.X_est[17]); // 四条腿的 Z
 
         // // --- Dynamics Constants ---
         // printf("\033[1;33m[Dynamics Constants]\033[0m\n");
@@ -117,11 +117,16 @@ namespace controllers
         // printf("  h_q_dq (First 6 elements): [%.2f, %.2f, %.2f, %.2f, %.2f, %.2f]\n",
         //     robot.h_q_dq[0], robot.h_q_dq[1], robot.h_q_dq[2], robot.h_q_dq[3], robot.h_q_dq[4], robot.h_q_dq[5]);
 
-        // // --- 2. 雅可比矩阵 J (浮动基 & 足端) ---
-        // printf("\033[1;33m[Jacobian Matrices (Norms)]\033[0m\n");
-        // printf("  J_base Norm: %10.4f\n", robot.J_base.norm());
-        // printf("  J_foot Norms: FL:%8.3f | FR:%8.3f | RL:%8.3f | RR:%8.3f\n",
-        //     robot.J_foot[0].norm(), robot.J_foot[1].norm(), robot.J_foot[2].norm(), robot.J_foot[3].norm());
+        // --- 2. 雅可比矩阵 J (浮动基 & 足端) ---
+        printf("\033[1;33m[Jacobian Matrices (Norms)]\033[0m\n");
+        printf("  J_base Norm: %10.4f\n", robot.J_base.norm());
+        // === 修改部分：打印完整的 J_foot 矩阵 ===
+        std::cout << "\033[1;36m[Full Jacobian Matrices]\033[0m" << std::endl;
+        const char* leg_names[4] = {"FL", "FR", "RL", "RR"};
+        for(int i = 0; i < 4; ++i) {
+            std::cout << ">>> J_foot[" << leg_names[i] << "]:\n" 
+                    << robot.J_foot[i] << std::endl << std::endl;
+        }
 
         // // --- 3. 漂移加速度 (Jdot * qdot) ---
         // printf("\033[1;33m[Drift Accelerations (Jdot * qdot)]\033[0m\n");

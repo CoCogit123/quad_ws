@@ -37,6 +37,12 @@ class Manager{
         void stand_pos_control(Robot_info &robot,Gait_info &gait);
 
         /**
+         * @brief 支撑相力矩控制 mpc计算得到
+         * @param 获取参数 计算Robot_info的最终电机控制参数
+         */
+        void stand_torque_control(Robot_info &robot,Gait_info &gait);
+
+        /**
          * @brief 阻尼控制
          * @param 
          */

@@ -35,6 +35,7 @@ namespace controllers {
         // ==========================================
         // 1. 用户输入 (User Command) - 输入
         // ==========================================
+        int mpc_use = 0;//使用mpc计算输出
 
         Vector3d body_Vel_des;   // 期望线速度-机体系       **********遥控器输入*************
         Vector3d world_Vel_des;  // 期望线速度-世界系       **********遥控器输入*************
@@ -107,6 +108,7 @@ namespace controllers {
         // ==========================================
         // 6. 最终电机控制
         // ==========================================
+        Vector12d mpc_force; //mpc计算出来的足端力矩 （输出时需要取反 输出反作用力得到足端力）
 
         Vector12d Pos_motor_cmd;        // 12个电机的控制角度
         Vector12d Vel_motor_cmd;        // 12个电机的控制角速度
@@ -122,6 +124,7 @@ namespace controllers {
             body_omega_des.setZero();
             world_omega_des.setZero();
             euler_des.setZero();
+            mpc_force.setZero();
 
             J_base.setZero();
             for(int i=0; i<4; i++) {
