@@ -31,6 +31,8 @@ void Mpc::init(Robot_info& robot,ColVec<13> &q_weights_, ColVec<12> &r_weights_)
         ub[i*20+4+10] = f_max; //14
         ub[i*20+4+15] = f_max; //19
     }
+    // ROS_INFO_STREAM("lb矩阵内容：\n" << lb);
+    // ROS_INFO_STREAM("ub矩阵内容：\n" << ub);
     //约束矩阵C
     RowMat<5, 3> C_i;
     C_i.setZero();
@@ -46,7 +48,8 @@ void Mpc::init(Robot_info& robot,ColVec<13> &q_weights_, ColVec<12> &r_weights_)
         C.block<5,3>(i*20 + 10,i*12 + 6) = C_i;
         C.block<5,3>(i*20 + 15,i*12 + 9) = C_i;
     }
-
+    // Eigen::MatrixXd C_block = C.block<20, 12>(0, 0);
+    // ROS_INFO_STREAM("C矩阵内容：\n" << C_block);
     // =========================================================
     // 权重
     // =========================================================
@@ -82,8 +85,8 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     x_now.segment(9,3) = robot.world_Vel_com;
     x_now[12] = -9.81;
     /************** 期望状态X_des 13*10**************/
+    static ColVec<3> pos_des_k1 = robot.world_Pos_com;
     for (int i = 0; i < HORIZON; ++i) {
-        static ColVec<3> pos_des_k1 = robot.world_Pos_com;
         if( i == 0 ) //k=1的期望位置
         {
             // pos_des_k1 = protect_degree * pos_des_k1 + ( 1 - protect_degree ) * robot.world_Pos_com + robot.world_Vel_com * dt;
@@ -123,6 +126,7 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     A_dt.block<3, 3>(0, 6) = ang_vel_to_rpy_rate * dt; //euler对应行
     A_dt.block<3, 3>(3, 9) = Eigen::Matrix3d::Identity() * dt;//pos对应行
     A_dt(11, 12) = dt;//vel(2)对应行--Z方向
+    // ROS_INFO_STREAM("A矩阵内容：\n" << A_dt);
     /************** B_dt变化部分 **************/
     Eigen::Matrix<double, 3, 4> foot_pos_abs; //只考虑旋转（世界坐标系原点下的坐标）
     foot_pos_abs = robot.body_Rot_world * robot.body_POS;
@@ -134,7 +138,7 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
         B_dt.block<3, 3>(9, 3 * i) =
                 (1 / robot.mass) * Eigen::Matrix3d::Identity() * dt;
     }
-
+    // ROS_INFO_STREAM("B矩阵内容：\n" << B_dt);
 
     // =========================================================
     // Step 2: 预测状态方程

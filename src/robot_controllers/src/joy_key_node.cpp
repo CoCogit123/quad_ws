@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
     // --- 速度控制参数 ---
     double target_vx = 0.0, target_vy = 0.0;
-    double z_des = 0.2;//期望高度
+    double z_des = 0.075;//期望高度
     const double MAX_VEL = 0.5;      // 最大恒定速度
     const double RAMP_STEP = 0.02;   // 步进值（值越小越平滑，0.02 在 100Hz 下代表 0.5秒从0加到1.0）
 
@@ -82,9 +82,9 @@ int main(int argc, char** argv) {
                         else if (code == KEY_X) msg.mode = 1;
                         else if (code == KEY_C) msg.mode = 2;
                         else if (code == KEY_V) msg.mode = 3;
-                        else if (code == KEY_U) z_des+=0.025;
-                        else if (code == KEY_H) z_des-=0.025;
-                        z_des = std::max(0.2, std::min(0.35, z_des));
+                        else if (code == KEY_U) z_des+=0.0125;
+                        else if (code == KEY_H) z_des-=0.0125;
+                        z_des = std::max(0.075, std::min(0.35, z_des));
                         if (code == KEY_U || code == KEY_H) ROS_INFO("z_des: %f", z_des);
                         if (code >= KEY_Z && code <= KEY_V) ROS_INFO("Mode: %d", msg.mode);
                     }

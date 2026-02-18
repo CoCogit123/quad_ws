@@ -7,7 +7,7 @@ void Estimate::init(Robot_info &robot_data)
 {
     //初始化算法需要的初值P和X；
         //P
-    double Z_start = 0.2;
+    double Z_start = 0.1;
     P.setIdentity();
     P = P * 3;
         //X 位置3 速度3 足端位置12

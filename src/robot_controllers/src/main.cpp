@@ -131,10 +131,7 @@ int main(int argc, char** argv) {
                 robot_info.body_omega_des = Vector3d(0.0, 0.0, msg->yaw_vel);
 
                 // 3.  Z 期望高度 z_des 
-                double z_now = robot_info.world_Pos_com[2];
-                double step = msg->z_des - z_now;
-                double limited_step = (step > 0.03) ? 0.03 : ((step < -0.03) ? -0.03 : step);
-                robot_info.z_des = z_now + limited_step;
+                robot_info.z_des = msg->z_des;
                 
                 static ros::Time last_time = ros::Time::now(); // 仅在第一次调用时初始化
                 ros::Time current_time = ros::Time::now();
@@ -220,7 +217,7 @@ int main(int argc, char** argv) {
             //Gait
             Gait_solver.update(gait_info,thread_runtime);
             //Estimate
-            if(robot_info.z_des >= 0.2 && Estimate_solver.init_flag == false)//站起来再开始初始化
+            if(robot_info.z_des >= 0.1 && Estimate_solver.init_flag == false)//站起来再开始初始化
             {
                 Estimate_solver.init_flag = true;
                 Estimate_solver.init(robot_info);
@@ -296,9 +293,10 @@ int main(int argc, char** argv) {
                 if(Mpc_solver.mpc_init_flag == false)
                 {
                     Vector13d Q;
-                    Q << 25, 25, 10, 5, 5, 100, 0, 0, 0.0, 0.0, 0.0, 20, 0; 
+                    // roll pitch yaw  x y z          wx wy wz          vx vy vz
+                    Q << 5, 5, 10,   0, 0, 100,    0, 0, 0.3,    0.0, 0.0, 10,   0; 
                     Vector12d R;
-                    R.setConstant(0.00005);
+                    R.setConstant(0.00004);//alpha > 1e-4过高，建议调整到1e-5
                     Mpc_solver.init(robot_info,Q,R);
                     Mpc_solver.mpc_init_flag = true;
                     ROS_INFO("Mpc Solver Initialized Successfully.");
@@ -313,7 +311,7 @@ int main(int argc, char** argv) {
             static ros::Time last_print_time = ros::Time::now(); // 静态变量，只初始化一次
             ros::Time now = ros::Time::now();
             // 检查时间间隔是否超过 0.1 秒
-            if ((now - last_print_time).toSec() >= 1) { // 
+            if ((now - last_print_time).toSec() >= 1 && Estimate_solver.init_flag == true ) { // 
                 
                 // 安全检查
                 if (Mpc_solver.qp_solution.size() >= 12) {
@@ -401,17 +399,18 @@ int main(int argc, char** argv) {
                             << std::setw(9) << val_des << " | " 
                             << std::setw(9) << diff << "\033[0m |" << std::endl;
                 }
+                ROS_INFO("z_des is %f",robot_info.z_des);
                 std::cout << "========================================================" << std::endl;
 
                 last_print_time = now;
             }
 
-            // 打印调试信息 (每1秒打印一次，避免刷屏)
-            ROS_INFO_STREAM_THROTTLE(1.0, 
-                "\n[100Hz Thread]"
-                << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / dddt) << " Hz"
-                << "\n  Delta T  : " << std::setprecision(6) << dddt << " s"
-            );
+            // // 打印调试信息 (每1秒打印一次，避免刷屏)
+            // ROS_INFO_STREAM_THROTTLE(1.0, 
+            //     "\n[100Hz Thread]"
+            //     << "\n  Rate     : " << std::fixed << std::setprecision(2) << (1.0 / dddt) << " Hz"
+            //     << "\n  Delta T  : " << std::setprecision(6) << dddt << " s"
+            // );
 
             // 休眠对齐频率
             rate.sleep();
