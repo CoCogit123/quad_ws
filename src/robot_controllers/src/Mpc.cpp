@@ -21,15 +21,15 @@ void Mpc::init(Robot_info& robot,ColVec<13> &q_weights_, ColVec<12> &r_weights_)
     // =========================================================
     
     //下限
-    lb.setZero();
+    lba.setZero();
     //上限 先全部设置成无穷大 再把对应的项设置成fmax
-    ub.setConstant(1e10);
+    uba.setConstant(1e10);
     for(int i=0;i<HORIZON;++i)
     {
-        ub[i*20+4+0] = f_max; //4
-        ub[i*20+4+5] = f_max; //9
-        ub[i*20+4+10] = f_max; //14
-        ub[i*20+4+15] = f_max; //19
+        uba[i*20+4+0] = f_max; //4
+        uba[i*20+4+5] = f_max; //9
+        uba[i*20+4+10] = f_max; //14
+        uba[i*20+4+15] = f_max; //19
     }
     // ROS_INFO_STREAM("lb矩阵内容：\n" << lb);
     // ROS_INFO_STREAM("ub矩阵内容：\n" << ub);
@@ -64,13 +64,17 @@ void Mpc::init(Robot_info& robot,ColVec<13> &q_weights_, ColVec<12> &r_weights_)
     R.diagonal() = R_vec;
 
     // =========================================================
-    // 求解器
+    // 求解器初始化
     // =========================================================
-    // === qpOASES 设置 ===
-    options.setToMPC(); // 启用热启动模式
-    options.printLevel = qpOASES::PL_NONE; // 关闭所有打印 (实时性关键)
-    options.enableRegularisation = qpOASES::BT_TRUE; // 如果矩阵奇异可开启正则化
-    qp_solver.setOptions(options);
+    #if use_solver == 0 //osqp-eigen
+        C_sparse = C.sparseView(); //一个将密集矩阵转换为稀疏矩阵视图，只存储非零元素，从而节省内存和计算资源。
+    #elif use_solver == 1 //qpoases
+        // === qpOASES 设置 ===
+        options.setToMPC(); // 启用热启动模式
+        options.printLevel = qpOASES::PL_NONE; // 关闭所有打印 (实时性关键)
+        qp_solver.setOptions(options);
+    #endif
+
 }
 
 void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
@@ -89,8 +93,8 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     for (int i = 0; i < HORIZON; ++i) {
         if( i == 0 ) //k=1的期望位置
         {
-            // pos_des_k1 = protect_degree * pos_des_k1 + ( 1 - protect_degree ) * robot.world_Pos_com + robot.world_Vel_com * dt;
-            pos_des_k1.setZero();
+            pos_des_k1 = protect_degree * pos_des_k1 + ( 1 - protect_degree ) * robot.world_Pos_com + robot.world_Vel_com * dt;
+            // pos_des_k1.setZero();
             pos_des_k1[2] = robot.z_des;
             X_des.segment(3,3) = pos_des_k1; //位置
             X_des.segment(0,3).setZero();//姿态roll pitch 为0
@@ -106,8 +110,8 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
             X_des.segment(i*13+0,3) = robot.euler + robot.world_omega_des*t;//姿态
             X_des.segment(i*13+3,3) = pos_des_k1 + robot.world_Vel_des*t;//位置
             X_des[i*13+5] = robot.z_des;//z(保持期望高度)
-            X_des.segment(i*13+0,3) = robot.world_omega_des;//角速度
-            X_des.segment(i*13+0,3) = robot.world_Vel_des;//线速度
+            X_des.segment(i*13+6,3) = robot.world_omega_des;//角速度
+            X_des.segment(i*13+9,3) = robot.world_Vel_des;//线速度
             X_des[i*13+12] = -9.81;
         }
     }
@@ -136,7 +140,7 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
         B_dt.block<3, 3>(6, 3 * i) =
                 robot.world_INERTIA.inverse() * utils::skew(foot_pos_abs.col(i)) * dt;
         B_dt.block<3, 3>(9, 3 * i) =
-                (1 / robot.mass) * Eigen::Matrix3d::Identity() * dt;
+                (1 / robot.mass) * Eigen::Matrix3d::Identity() * dt;//robot.mass取11
     }
     // ROS_INFO_STREAM("B矩阵内容：\n" << B_dt);
 
@@ -176,9 +180,9 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
             int fz_idx = i*20 + leg*5 + 4; // 第 i 步，第 leg 条腿的第 5 个约束(fz)
             // 核心逻辑：根据步态表 gait_table 决定 f_max 摆动腿则整条腿的力为0
             if (gait.Gait_state[leg] == 1) {
-                ub(fz_idx) = f_max; // 支撑相：允许出力
+                uba(fz_idx) = f_max; // 支撑相：允许出力
             } else {
-                ub(fz_idx) = 0.0;   // 摆动相：强制 fz <= 0
+                uba(fz_idx) = 0.0;   // 摆动相：强制 fz <= 0
             }
         }
     }
@@ -201,42 +205,68 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     // =========================================================
     // Step 5: QP问题求解
     // =========================================================
-    qpOASES::int_t nWSR = 1000; // 最大工作集迭代次数，热启动通常只需 5-10 次
-    qpOASES::returnValue ret;
-    if(first_run) {
-        // 冷启动：初始化矩阵结构
-        ret = qp_solver.init(hessian.data(), gradient.data(), C.data(), 
-                             (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
-                             lb.data(), ub.data(), 
-                             nWSR);
-        first_run = false;
-        ROS_INFO("qp_solver init success ret = %d",ret);
-    } else {
-        // 热启动：利用上一帧的解加速
-        // 关键：由于我们定义 H, C 为 RowMajor，这里传 .data() 是安全的，且无拷贝
-        ret = qp_solver.hotstart(hessian.data(), gradient.data(), C.data(), 
-                                 (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
-                                 lb.data(), ub.data(), 
-                                 nWSR);
-        
-        // 鲁棒性：如果热启动失败 (如发生剧烈扰动)，尝试重置
-        if(ret != qpOASES::SUCCESSFUL_RETURN) {
-            qp_solver.reset();
-            qp_solver.init(hessian.data(), gradient.data(), C.data(), 
-                           (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
-                           lb.data(), ub.data(), 
-                           nWSR);
+    #if use_solver == 0 //osqp-eigen
+        //稀疏化
+        hessian_sparse = hessian.sparseView();
+        //求解器
+        if (!osqp_solver.isInitialized()) {
+        osqp_solver.settings()->setVerbosity(false);
+        osqp_solver.settings()->setWarmStart(true);
+        osqp_solver.data()->setNumberOfVariables(12 * HORIZON);
+        osqp_solver.data()->setNumberOfConstraints(20 * HORIZON); //20是约束 一条腿5个共20
+        osqp_solver.data()->clearLinearConstraintsMatrix();
+        osqp_solver.data()->clearHessianMatrix();
+        osqp_solver.data()->setLinearConstraintsMatrix(C_sparse);
+        osqp_solver.data()->setHessianMatrix(hessian_sparse);
+        osqp_solver.data()->setGradient(gradient);
+        osqp_solver.data()->setLowerBound(lba);
+        osqp_solver.data()->setUpperBound(uba);
+        osqp_solver.initSolver();
+        osqp_solver.solveProblem();
+        ROS_INFO("solver init success!!!!!!");
+    }
+    else{
+        osqp_solver.updateHessianMatrix(hessian_sparse);
+        osqp_solver.updateGradient(gradient);
+        osqp_solver.updateLowerBound(lba);
+        osqp_solver.updateUpperBound(uba);
+        osqp_solver.solveProblem();
+        qp_solution = osqp_solver.getSolution();
+        Eigen::VectorXd qp_force = qp_solution.head(12);
+        bool is_valid = !qp_force.hasNaN() && qp_force.allFinite();
+        if (is_valid)
+        {
+            robot.mpc_force = qp_force;
+        }else{
+            ROS_WARN("QP solution has NaN/Inf, skip assigning mpc_force");
         }
     }
-    //提取结果
-    if(ret == qpOASES::SUCCESSFUL_RETURN) {
-        qp_solver.getPrimalSolution(qp_solution.data());
-        robot.mpc_force = qp_solution.head(12);
-    } else {
-        // 错误处理：保持上一帧的力或设为0
-        // std::cerr << "MPC failed!" << std::endl;
-        ROS_INFO("qp_solver failed ret = %d",ret);
-    }
+    #elif use_solver == 1 //qpoases
+        qpOASES::int_t nWSR = 1000; // 最大工作集迭代次数
+        qpOASES::returnValue ret1;
+        qpOASES::returnValue ret2;
+        // 冷启动：初始化矩阵结构
+        ret1 = qp_solver.init(hessian.data(), gradient.data(), C.data(), 
+                            (qpOASES::real_t*)nullptr, (qpOASES::real_t*)nullptr, 
+                            lba.data(), uba.data(), 
+                            nWSR);
+        if(ret1 != qpOASES::SUCCESSFUL_RETURN) 
+        {
+            ROS_INFO("qp_solver failed ret 1= %d",ret1);
+        }else
+        {
+            ret2 = qp_solver.getPrimalSolution(qp_solution.data());
+            if(ret2 != qpOASES::SUCCESSFUL_RETURN)
+            {
+                ROS_INFO("qp_get result failed ret 2= %d",ret2);
+            }else{
+                robot.mpc_force = qp_solution.head(12);
+            }
+        }
+
+    #endif
+
+
 
 }
 

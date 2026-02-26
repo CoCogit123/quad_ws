@@ -180,45 +180,8 @@
       </geometry>
     </collision>
   </link>
-  <!-- 指定执行机构 -->
-  <!--motor1-->
-  <transmission name="leg1_joint1_tran">
-    <!--指定传动类型-->
-    <type>transmission_interface/SimpleTransmission</type>
-    <!--传动系统所连接的关节-->
-    <joint name="leg1_joint1">
-      <!--硬件接口-->
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <!--执行器名称-->
-    <actuator name="leg1_joint1_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <!--减速比-->
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor2-->
-  <transmission name="leg1_joint2_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg1_joint2">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg1_joint2_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor3-->
-  <transmission name="leg1_joint3_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg1_joint3">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg1_joint3_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
+  
+
   <!--joint1-->
   <joint name="leg2_joint1" type="revolute">
     <!--两个坐标系（link）的相对偏移-->
@@ -354,45 +317,9 @@
       </geometry>
     </collision>
   </link>
-  <!-- 指定执行机构 -->
-  <!--motor1-->
-  <transmission name="leg2_joint1_tran">
-    <!--指定传动类型-->
-    <type>transmission_interface/SimpleTransmission</type>
-    <!--传动系统所连接的关节-->
-    <joint name="leg2_joint1">
-      <!--硬件接口-->
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <!--执行器名称-->
-    <actuator name="leg2_joint1_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <!--减速比-->
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor2-->
-  <transmission name="leg2_joint2_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg2_joint2">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg2_joint2_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor3-->
-  <transmission name="leg2_joint3_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg2_joint3">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg2_joint3_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
+  
+
+
   <!--joint1-->
   <joint name="leg3_joint1" type="revolute">
     <!--两个坐标系（link）的相对偏移-->
@@ -528,45 +455,9 @@
       </geometry>
     </collision>
   </link>
-  <!-- 指定执行机构 -->
-  <!--motor1-->
-  <transmission name="leg3_joint1_tran">
-    <!--指定传动类型-->
-    <type>transmission_interface/SimpleTransmission</type>
-    <!--传动系统所连接的关节-->
-    <joint name="leg3_joint1">
-      <!--硬件接口-->
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <!--执行器名称-->
-    <actuator name="leg3_joint1_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <!--减速比-->
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor2-->
-  <transmission name="leg3_joint2_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg3_joint2">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg3_joint2_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor3-->
-  <transmission name="leg3_joint3_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg3_joint3">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg3_joint3_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
+  
+
+
   <!--joint1-->
   <joint name="leg4_joint1" type="revolute">
     <!--两个坐标系（link）的相对偏移-->
@@ -702,45 +593,8 @@
       </geometry>
     </collision>
   </link>
-  <!-- 指定执行机构 -->
-  <!--motor1-->
-  <transmission name="leg4_joint1_tran">
-    <!--指定传动类型-->
-    <type>transmission_interface/SimpleTransmission</type>
-    <!--传动系统所连接的关节-->
-    <joint name="leg4_joint1">
-      <!--硬件接口-->
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <!--执行器名称-->
-    <actuator name="leg4_joint1_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <!--减速比-->
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor2-->
-  <transmission name="leg4_joint2_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg4_joint2">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg4_joint2_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <!--motor3-->
-  <transmission name="leg4_joint3_tran">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leg4_joint3">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="leg4_joint3_motor">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
+  
+  
   <!--imu-->
   <!-- Imu joint -->
   <joint name="imu_joint" type="fixed">

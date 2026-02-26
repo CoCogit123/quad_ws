@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <cmath> // 用于 std::sqrt, std::atan 等
+#include <Eigen/Core> // 确保引入 Eigen
 
 namespace controllers {
 
@@ -26,6 +27,8 @@ namespace controllers {
 // ==========================================
 class Dynamics_Impl {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     // 成员变量直接从原来的 private 搬过来
     int init_ = 0;
     pinocchio::Model model_;
@@ -193,7 +196,7 @@ public:
 
 // 1. 构造函数：初始化 pimpl
 Dynamics::Dynamics(const std::string& urdf_path) 
-    : pimpl_(std::make_unique<Dynamics_Impl>(urdf_path)) {}
+    : pimpl_(new Dynamics_Impl(urdf_path)) {}
 
 // 2. 析构函数：必须在这里写 default，
 // 因为这里 DynamicsImpl 已经是一个完整的类型了，unique_ptr 知道怎么删它

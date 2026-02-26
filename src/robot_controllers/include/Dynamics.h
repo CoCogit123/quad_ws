@@ -7,7 +7,7 @@
 #include <Eigen/Dense>   // 假设我们需要 Eigen 类型作为接口参数
 #include "Common.h"      // 假设包含 Robot_info 和 Vector19d 等定义
 #include "Utils.h"
-
+#include <Eigen/Core> // 确保引入 Eigen
 namespace controllers {
 
 // 前向声明：告诉编译器有个叫 DynamicsImpl 的类，但现在不需要知道它的细节
@@ -19,6 +19,7 @@ class Dynamics_Impl;
  */
 class Dynamics {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     /**
      * @brief 构造函数
      * @param urdf_path URDF文件路径

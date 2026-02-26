@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(test)
+
+# 查找依赖
+find_package(Eigen3 REQUIRED)
+find_package(OSQP REQUIRED)       # 注意是 OSQP 不是 Osqp
+find_package(OsqpEigen REQUIRED)
+
+link_directories(
+  /usr/local/lib 
+  )
+  
+
+  
+include_directories( include )
+
+add_executable(testqjj  test.cpp  )
+
+target_link_libraries(testqjj
+                       libosqp.so  
+                       libOsqpEigen.so 
+                       libqdldl.so 
+                       )

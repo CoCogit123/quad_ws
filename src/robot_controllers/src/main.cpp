@@ -25,6 +25,7 @@
 #include <iomanip> // 用于控制输出格式
 #include <ros/package.h> // 用于获取功能包路径
 #include <sensor_msgs/Imu.h>//imu消息包
+#include <sensor_msgs/Joy.h> //joy消息包
 
 using namespace controllers;//自定义工作空间
 double get_loop_interval(void);
@@ -117,7 +118,7 @@ int main(int argc, char** argv) {
             robot_info.world_Vel_com = robot_info.body_Rot_world*robot_info.body_Vel_com;
         }
     );
-    ros::Subscriber Joy_sub = nh.subscribe<custom_msgs::Joy_control>(
+    ros::Subscriber Keyboard_sub = nh.subscribe<custom_msgs::Joy_control>(
         "/joy_control", 
         10, 
         [&robot_info, &gait_info](const custom_msgs::Joy_control::ConstPtr& msg) {
@@ -163,6 +164,101 @@ int main(int argc, char** argv) {
             }
             robot_info.world_Vel_des = robot_info.body_Rot_world*robot_info.body_Vel_des;
             robot_info.world_omega_des = robot_info.body_omega_des;
+        }
+    );
+    ros::Subscriber Joy_sub = nh.subscribe<sensor_msgs::Joy>(
+        "/joy", 
+        100, 
+        [&robot_info, &gait_info](const sensor_msgs::Joy::ConstPtr& msg) {
+        //rosrun joy joy_node
+        //左摇杆对应 msg->axes[0][1] (-1,1)  【2】为左后肩键 按下为-1 不按下为1 
+        //右摇杆对应 msg->axes[3][4] (-1,1)  【5】为右后肩键 按下为-1 不按下为1 
+        //十字架左右对应 msg->axes[6] 上下 对应 msg->axes[7]
+
+        //A--> msg->buttons[0] B--> msg->buttons[1] Y--> msg->buttons[2] X--> msg->buttons[3]
+        //左前肩键 --> msg->buttons[4] 右前肩键 --> msg->buttons[5]
+        //左后肩键 --> [6]按下为1 不按下为0 右后肩键 --> [7]按下为1 不按下为0 
+        //中间三个键对应msg->buttons[8][9][10]
+        //摇杆按下对应msg->buttons[11][12]
+        if( msg->buttons[4] == 1 && msg->buttons[5] == 1) //左前肩键和右前肩键同时按下切换运行状态
+        {
+            robot_info.run_flag = !robot_info.run_flag;
+            ROS_WARN("run_flag is changed into %d",robot_info.run_flag);
+        }
+
+        double com_vel_x_max = 0.6;
+        double com_vel_y_max = 0.3;
+        double com_omega_yaw_max = 0.5;
+        if(robot_info.run_flag == true)
+        {
+            // 1. 存储线速度（机体系）左摇杆
+            robot_info.body_Vel_des = Vector3d(msg->axes[1]*com_vel_x_max, msg->axes[0]*com_vel_y_max, 0.0);
+            
+            // 2. 存储角速度（机体系）- 假设 msg->yaw_vel 对应绕 Z 轴角速度 右摇杆
+            robot_info.body_omega_des = Vector3d(0.0, 0.0, msg->axes[3]*com_omega_yaw_max);
+
+            // 3.  Z 期望高度 z_des 下降沿检测 十字架
+            static int last_Z = msg->axes[7];
+            int now_Z = msg->axes[7];
+            if( now_Z != 0 && last_Z == 0)
+            {
+                robot_info.z_des+=0.025*now_Z;
+            }
+            last_Z = now_Z;
+
+            static double last_yaw = 0;
+            double now_yaw = msg->axes[3];
+            static ros::Time trigger_time = ros::Time::now();
+            if( std::fabs(now_yaw) >= 0.005 ) 
+            {
+                if(std::fabs(last_yaw) <= 0.005) { trigger_time = ros::Time::now(); }//记录下降沿触发时间
+                int total_duration = (int)((ros::Time::now() - trigger_time).toSec()*1000);//转化成ms
+                if(total_duration>=10)//每隔10ms触发一次 100hz
+                {
+                    robot_info.euler_des[2] += msg->axes[3]*com_omega_yaw_max*0.01; //速度乘以时间
+                    trigger_time = ros::Time::now();
+                }
+            }
+            last_yaw = now_yaw;
+            
+            if(msg->buttons[0] == 1) //A
+            {
+                gait_info.Gait_des = none;
+                ROS_WARN("Mode: none");
+            }else if(msg->buttons[2] == 1) //Y
+            {
+                gait_info.Gait_des = stand;
+                ROS_WARN("Mode: stand");
+            }else if(msg->buttons[3] == 1) //X
+            {
+                gait_info.Gait_des = walk;
+                ROS_WARN("Mode: walk");
+            }else if(msg->buttons[1] == 1) //B
+            {
+                gait_info.Gait_des = trot;
+                ROS_WARN("Mode: trot");
+            }
+            
+            if(gait_info.Gait_des!=gait_info.Gait_mode)
+            {
+                gait_info.Gait_flag=1;
+            }
+
+            //6，mpc是否使用
+            if(msg->buttons[12] == 1)
+            {
+                robot_info.mpc_use = !robot_info.mpc_use;
+                ROS_WARN("mpc_use Flag: %s", robot_info.mpc_use ? "ON" : "OFF");
+            }
+
+        }else 
+        {
+            robot_info.body_Vel_des.setZero();
+            robot_info.body_omega_des.setZero();
+        }
+        robot_info.world_Vel_des = robot_info.body_Rot_world*robot_info.body_Vel_des;
+        robot_info.world_omega_des = robot_info.body_Rot_world*robot_info.body_omega_des;
+        
         }
     );
     // **************************
@@ -231,6 +327,8 @@ int main(int argc, char** argv) {
             //Manager
             Manager_solver.update(robot_info,gait_info,swing_info);
             Manager_solver.motor_cmd(robot_info,motor_pub);
+
+
             // 打印调试信息 (每1秒打印一次，避免刷屏)
             // ROS_INFO_STREAM_THROTTLE(1.0, 
             //     "\n[500Hz Thread]"
@@ -294,9 +392,9 @@ int main(int argc, char** argv) {
                 {
                     Vector13d Q;
                     // roll pitch yaw  x y z          wx wy wz          vx vy vz
-                    Q << 5, 5, 10,   0, 0, 100,    0, 0, 0.3,    0.0, 0.0, 10,   0; 
+                    Q << 50, 50, 10,   10, 10, 200,    0.05, 0.05, 0.3,    0.5, 0.5, 10.0,   0; 
                     Vector12d R;
-                    R.setConstant(0.00004);//alpha > 1e-4过高，建议调整到1e-5
+                    R.setConstant(0.00001);//alpha > 1e-4过高，建议调整到1e-5
                     Mpc_solver.init(robot_info,Q,R);
                     Mpc_solver.mpc_init_flag = true;
                     ROS_INFO("Mpc Solver Initialized Successfully.");
@@ -421,7 +519,7 @@ int main(int argc, char** argv) {
     // 线程 3 (200Hz)  用于打印调试数据
     // =========================================================
     std::thread thread_debug([&]() {
-        ros::Duration(3.0).sleep();
+        ros::Duration(5.0).sleep();
         double target_freq = 200.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.01s 目标delta_t
         ros::Rate rate(target_freq);
