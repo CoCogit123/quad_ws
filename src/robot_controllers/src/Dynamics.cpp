@@ -99,14 +99,15 @@ public:
         // =========================================================
         
         // 更新运动学和雅可比
-        pinocchio::forwardKinematics(model_, data_, q_pin_, v_pin_);
+        Eigen::VectorXd a_zero = Eigen::VectorXd::Zero(model_.nv);
+        pinocchio::forwardKinematics(model_, data_, q_pin_, v_pin_,a_zero);
         pinocchio::updateFramePlacements(model_, data_);
         pinocchio::computeJointJacobians(model_, data_, q_pin_);
         
         // 更新动力学 (M, h)
         pinocchio::crba(model_, data_, q_pin_); // 更新 M
         pinocchio::nonLinearEffects(model_, data_, q_pin_, v_pin_); // 更新 h (nle)
-        
+         
         // 更新质心
         pinocchio::centerOfMass(model_, data_, q_pin_, v_pin_);
 
@@ -117,6 +118,14 @@ public:
         // 3.1 动力学矩阵 M(q) 和 h_q_dq
         robot.M_q = data_.M; // 加上电机转子惯量需要额外处理，这里仅为连杆
         robot.M_q.triangularView<Eigen::StrictlyLower>() = data_.M.transpose().triangularView<Eigen::StrictlyLower>(); // 确保对称
+
+        Eigen::LLT<Eigen::MatrixXd> llt_M(robot.M_q);
+        if (llt_M.info() != Eigen::Success) {
+            // 数值奇异时加小阻尼
+            robot.M_q += 1e-6 * Eigen::MatrixXd::Identity(robot.M_q.rows(), robot.M_q.cols());
+            llt_M.compute(robot.M_q);
+        }
+        robot.M_q_inv = llt_M.solve(Eigen::MatrixXd::Identity(robot.M_q.rows(), robot.M_q.cols()));
         robot.h_q_dq = data_.nle;
 
         // 3.2 惯性矩阵 $$I_{\mathcal{O}}$$ & $$I_{\mathcal{B}}$$
@@ -164,8 +173,10 @@ public:
         // 或者简单地认为如果我们要控制浮动基，这部分包含在 h(q,dq) 中对应的项里。
         // 但如果作为单独项：
         // robot.Jdt_qdt_base = ... (在WBC中通常结合h项一起处理，或通过 getFrameAcceleration 获得)
-
-
+        pinocchio::Motion base_drift = 
+        pinocchio::getClassicalAcceleration(model_, data_, root_joint_indices_, pinocchio::LOCAL_WORLD_ALIGNED);
+        robot.Jdt_qdt_base_angular = base_drift.angular();
+        robot.Jdt_qdt_base_linear = base_drift.linear();
         // =========================================================
         // Step init: 提取不变的数据并填充到 Robot_info
         // =========================================================
@@ -240,11 +251,12 @@ void Dynamics::update(Robot_info& robot) {
         Eigen::Vector3d O_A;
         O_A << robot.hx*dir_x, dir_y*robot.hy, 0.0;
 
-        Eigen::Matrix3d rot_mat;//旋转
-        rot_mat = utils::euler_to_rot(robot.euler_des);
+        // Eigen::Matrix3d rot_mat;//旋转
+        // rot_mat = utils::euler_to_rot(robot.euler_des);
         
         Eigen::Vector3d Op_Ap;
-        Op_Ap = rot_mat*O_A;
+        // Op_Ap = rot_mat*O_A;
+        Op_Ap = O_A;
 
         Eigen::Vector3d Ap_B;
 

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <Eigen/Dense>
+#include <Eigen/SVD>
+#include <Eigen/Cholesky>
 
 #include "Common.h"
 
@@ -20,6 +22,10 @@ class utils
         static Vector3d bezier_vel(Vector3d start,Vector3d end,double swing_high,double devel);
 
         static Matrix3d skew(Vector3d vec);
+
+        static void WeightedInverse(const Eigen::MatrixXd& J, const Eigen::MatrixXd& Winv, 
+                                Eigen::MatrixXd& Jinv, double threshold = 0.0001);
+        static void PseudoInverse(const Eigen::MatrixXd& mat, double threshold, Eigen::MatrixXd& inv);
                             
 };
 

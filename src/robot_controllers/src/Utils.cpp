@@ -116,4 +116,28 @@ Matrix3d utils::skew(Vector3d vec)
     return rst;
 }
 
+void utils::WeightedInverse(const Eigen::MatrixXd& J, const Eigen::MatrixXd& Winv, 
+                    Eigen::MatrixXd& Jinv,double threshold) 
+{
+    // 1. 计算 lambda = J * Winv * J^T
+    Eigen::MatrixXd lambda = J * Winv * J.transpose();
+    
+    // 2. 对 lambda 求伪逆
+    Eigen::MatrixXd lambda_inv;
+    PseudoInverse(lambda, threshold, lambda_inv);
+    
+    // 3. 计算最终加权伪逆
+    Jinv = Winv * J.transpose() * lambda_inv;
+}
+
+void utils::PseudoInverse(const Eigen::MatrixXd& mat, double threshold, Eigen::MatrixXd& inv) 
+{
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::VectorXd singular_values = svd.singularValues();
+    for (int i = 0; i < singular_values.size(); ++i) {
+        singular_values(i) = singular_values(i) > threshold ? 1.0 / singular_values(i) : 0.0;
+    }
+    inv = svd.matrixV() * singular_values.asDiagonal() * svd.matrixU().transpose();
+}
+
 }

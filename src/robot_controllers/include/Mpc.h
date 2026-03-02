@@ -7,7 +7,7 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/MatrixFunctions>
 
-#define use_solver 1  // 0:osqp-eigen  1:qpoases
+#define use_solver 0  // 0:osqp-eigen  1:qpoases
 
 #if use_solver == 1   //qpoases
     #include <qpOASES.hpp>

@@ -40,8 +40,6 @@ namespace controllers
         // --- 3. 姿态与高度指令 (State Setpoints - Integrated) ---
         // printf("\033[1;33m[Postural Setpoints (Integrated)]\033[0m\n");
         // // 将欧拉角转为角度打印，更符合直觉
-        // printf("  Euler Des (deg): R:%7.2f, P:%7.2f, Y:%7.2f\n", 
-        //     robot.euler_des.x() * 57.3, robot.euler_des.y() * 57.3, robot.euler_des.z() * 57.3);
         // printf("  Height Des (m) : %8.4f  (Offset to Ground)\n", robot.z_des);
 
         // // --- Motor Data (按照四足机器人腿部逻辑排列) ---

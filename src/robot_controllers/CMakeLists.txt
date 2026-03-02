@@ -67,6 +67,7 @@ include_directories(
   ${WORKSPACE_PATH}/third_party/qpOASES/include #qpOASES
   ${OSQP_INCLUDE_DIRS}#osqp
   ${OsqpEigen_INCLUDE_DIRS}#osqp-eigen
+  ${WORKSPACE_PATH}/third_party/quadprog/include/ #quadprog
 )
 #指定pinocchio库文件的路径
 link_directories(${PINOCCHIO_LIBRARY_DIRS})
@@ -80,7 +81,7 @@ link_directories(${WORKSPACE_PATH}/third_party/qpOASES/lib)
 # add_dependencies(test_gait ${catkin_EXPORTED_TARGETS}) 
 # target_link_libraries(test_gait ${catkin_LIBRARIES})
 
-add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp src/Rviz_vision.cpp src/Estimate.cpp src/Mpc.cpp)
+add_executable(main src/main.cpp src/Utils.cpp src/Dynamics.cpp src/Debug.cpp src/Gait.cpp src/Manager.cpp src/Swing.cpp src/Rviz_vision.cpp src/Estimate.cpp src/Mpc.cpp src/Wbc.cpp)
 add_dependencies(main ${catkin_EXPORTED_TARGETS}) 
 target_link_libraries(main ${catkin_LIBRARIES})
 target_link_libraries(main ${PINOCCHIO_LIBRARIES})#pinocchio的库文件
@@ -90,7 +91,7 @@ target_link_libraries(main
                        ${WORKSPACE_PATH}/third_party/osqp/lib/libqdldl.so 
                        ${WORKSPACE_PATH}/third_party/osqp-eigen/lib/libOsqpEigen.so
                        )#osqp-eigen的库文件
-
+target_link_libraries(main ${WORKSPACE_PATH}/third_party/quadprog/lib/libquadprog.a)#quadprog库
 add_executable(joy_key_node src/joy_key_node.cpp)
 target_link_libraries(joy_key_node ${catkin_LIBRARIES})
 add_dependencies(joy_key_node ${catkin_EXPORTED_TARGETS})

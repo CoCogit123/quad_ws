@@ -91,29 +91,19 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     /************** 期望状态X_des 13*10**************/
     static ColVec<3> pos_des_k1 = robot.world_Pos_com;
     for (int i = 0; i < HORIZON; ++i) {
-        if( i == 0 ) //k=1的期望位置
-        {
-            pos_des_k1 = protect_degree * pos_des_k1 + ( 1 - protect_degree ) * robot.world_Pos_com + robot.world_Vel_com * dt;
-            // pos_des_k1.setZero();
-            pos_des_k1[2] = robot.z_des;
-            X_des.segment(3,3) = pos_des_k1; //位置
-            X_des.segment(0,3).setZero();//姿态roll pitch 为0
-            X_des(2) = robot.euler[2];//姿态 -- 直接为当前姿态
-            X_des.segment(6,3) = robot.world_omega_des;//角速度
-            X_des.segment(9,3) = robot.world_Vel_des;//线速度
-            X_des[12] = -9.81;
-        }else
-        {
-            // 计算当前步的时间偏移
-            double t = (i + 1) * dt;
-
-            X_des.segment(i*13+0,3) = robot.euler + robot.world_omega_des*t;//姿态
-            X_des.segment(i*13+3,3) = pos_des_k1 + robot.world_Vel_des*t;//位置
-            X_des[i*13+5] = robot.z_des;//z(保持期望高度)
-            X_des.segment(i*13+6,3) = robot.world_omega_des;//角速度
-            X_des.segment(i*13+9,3) = robot.world_Vel_des;//线速度
-            X_des[i*13+12] = -9.81;
-        }
+        double t = (i + 1) * dt;
+        //姿态 
+        X_des.segment(i*13+0,3).setZero(); //roll pitch 强制为0；
+        X_des[i*13+2] = robot.euler[2] + robot.world_omega_des[2] * t; //yaw
+        //位置
+        X_des.segment(i*13+3,3) = robot.world_Pos_com + robot.world_Vel_des * t;
+        X_des[i*13+5] = robot.z_des;
+        //角速度
+        X_des.segment(i*13+6,3) = robot.world_omega_des;
+        //线速度
+        X_des.segment(i*13+9,3) = robot.world_Vel_des;
+        //g
+        X_des[i*13+12] = -9.81;
     }
 
     // =========================================================

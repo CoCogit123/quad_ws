@@ -134,18 +134,6 @@ int main(int argc, char** argv) {
                 // 3.  Z 期望高度 z_des 
                 robot_info.z_des = msg->z_des;
                 
-                static ros::Time last_time = ros::Time::now(); // 仅在第一次调用时初始化
-                ros::Time current_time = ros::Time::now();
-                // 计算两次回调之间的实际时间差
-                double dt = (current_time - last_time).toSec();
-                // 更新时间戳供下次使用
-                last_time = current_time;
-                // --- 鲁棒性保护 ---
-                // 第一次运行或间隔过长（比如程序卡住后恢复）时，给一个合理的默认值
-                if (dt <= 0.0 || dt > 0.5) {
-                    dt = 0.02; // 假设期望频率是 50Hz，则设为 0.02s
-                }
-                robot_info.euler_des[2] = robot_info.euler_des[2] + msg->yaw_vel*dt;
 
                 // 5. 读取 mode 并转换为步态枚举存储
                 // 假设你的枚举强制转换是安全的
@@ -205,22 +193,7 @@ int main(int argc, char** argv) {
                 robot_info.z_des+=0.025*now_Z;
             }
             last_Z = now_Z;
-
-            static double last_yaw = 0;
-            double now_yaw = msg->axes[3];
-            static ros::Time trigger_time = ros::Time::now();
-            if( std::fabs(now_yaw) >= 0.005 ) 
-            {
-                if(std::fabs(last_yaw) <= 0.005) { trigger_time = ros::Time::now(); }//记录下降沿触发时间
-                int total_duration = (int)((ros::Time::now() - trigger_time).toSec()*1000);//转化成ms
-                if(total_duration>=10)//每隔10ms触发一次 100hz
-                {
-                    robot_info.euler_des[2] += msg->axes[3]*com_omega_yaw_max*0.01; //速度乘以时间
-                    trigger_time = ros::Time::now();
-                }
-            }
-            last_yaw = now_yaw;
-            
+  
             if(msg->buttons[0] == 1) //A
             {
                 gait_info.Gait_des = none;
@@ -392,9 +365,9 @@ int main(int argc, char** argv) {
                 {
                     Vector13d Q;
                     // roll pitch yaw  x y z          wx wy wz          vx vy vz
-                    Q << 50, 50, 10,   10, 10, 200,    0.05, 0.05, 0.3,    0.5, 0.5, 10.0,   0; 
+                    Q << 150, 150, 50,   0, 0, 80,    0.2, 0.2, 0.2,    0.3, 0.3, 0.3,   0;   
                     Vector12d R;
-                    R.setConstant(0.00001);//alpha > 1e-4过高，建议调整到1e-5
+                    R.setConstant(1e-6);
                     Mpc_solver.init(robot_info,Q,R);
                     Mpc_solver.mpc_init_flag = true;
                     ROS_INFO("Mpc Solver Initialized Successfully.");

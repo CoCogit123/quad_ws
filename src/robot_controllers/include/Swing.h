@@ -9,7 +9,7 @@ namespace controllers{
 class Swing{
     public:
         Swing(){
-            k_foot_ = 0.015;
+            k_foot_ = 0.05;
             last_gait_type_.setConstant(1);
         }
         /**

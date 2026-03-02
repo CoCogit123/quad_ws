@@ -73,6 +73,7 @@ namespace controllers {
         //趴下
         case Gait_type::none:
             // 周期 1.0s (无意义), 占空比 1.0 (全支撑)
+            gait_data.contact_num = 0;
             gait_data.time_gait = 1.0;
             gait_data.Gait_ratio.setConstant(1.0);
             gait_data.Gait_offset.setZero();
@@ -80,13 +81,15 @@ namespace controllers {
         //stand
         case Gait_type::stand:
             // 周期 1.0s (无意义), 占空比 1.0 (全支撑)
+            gait_data.contact_num = 4;
             gait_data.time_gait = 1.0;
             gait_data.Gait_ratio.setConstant(1.0);
             gait_data.Gait_offset.setZero();
         //walk
         case Gait_type::walk:
             // 周期 0.8s, 占空比 0.75
-            gait_data.time_gait = 0.8;
+            gait_data.contact_num = 3;
+            gait_data.time_gait = 2.0;
             gait_data.Gait_ratio.setConstant(0.75);
             // 偏移量
             gait_data.Gait_offset << 0.25, 0.75, 0.5, 0.0;
@@ -95,7 +98,8 @@ namespace controllers {
         case Gait_type::trot:
         default:
             // 周期 0.6s, 占空比 0.75
-            gait_data.time_gait = 0.6;
+            gait_data.contact_num = 2;
+            gait_data.time_gait = 0.8;
             gait_data.Gait_ratio.setConstant(0.5);
             gait_data.Gait_offset << 0.5, 0.0, 0.0, 0.5;
             break;

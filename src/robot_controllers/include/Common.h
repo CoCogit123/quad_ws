@@ -43,7 +43,6 @@ namespace controllers {
         Vector3d world_omega_des;// 期望角速度-世界系       **********遥控器输入*************
 
         double z_des = 0.075;//期望高度（速度累计来）         **********遥控器输入*************
-        Vector3d euler_des;//期望欧拉角（速度累计来）       **********遥控器输入*************
 
         double p_x_offest = -0.02;//足端默认支撑时的x偏移量（左上腿为标准 ）**********配置参数*************
         double p_y_offest = 0;//足端默认支撑时的y偏移量（左上腿为标准 ）    **********配置参数*************
@@ -99,10 +98,12 @@ namespace controllers {
         Matrix6x18d J_base;           // 雅可比矩阵 (浮动基) 关节空间 -> 线速度和角速度 **********pinocchio*************
         Matrix3x18d J_foot[4];        // 雅可比矩阵 (足端)   关节空间 -> 线速度 **********pinocchio*************
 
-        Vector6d Jdt_qdt_base;    // 机身漂移加速度 是不是用不上 **********pinocchio*************
+        Vector3d Jdt_qdt_base_angular;    // 机身漂移加速度 转动 **********pinocchio*************
+        Vector3d Jdt_qdt_base_linear;      // 机身漂移加速度 平动**********pinocchio*************
         Vector3d Jdt_qdt_foot[4];             // 足端漂移加速度 (只取线加速度) **********pinocchio*************
 
         Matrix18d M_q; // 广义质量矩阵 **********pinocchio*************
+        Matrix18d M_q_inv; // 广义质量矩阵的逆 **********pinocchio*************
         Vector18d h_q_dq;                  // 非线性项 (科里奥利+离心+重力) **********pinocchio*************
 
         // ==========================================
@@ -123,7 +124,6 @@ namespace controllers {
             world_Vel_des.setZero();
             body_omega_des.setZero();
             world_omega_des.setZero();
-            euler_des.setZero();
             mpc_force.setZero();
 
             J_base.setZero();
@@ -153,7 +153,8 @@ namespace controllers {
         // ==========================================
         
         Gait_type Gait_mode;             // 当前运行步态类型
-        
+        int contact_num;
+
         double time_gait;               // 一个周期时长 (秒)
         double time_swing;              //   摆动时长 (秒) 
         double time_stand;              //   支撑时长 (秒)
@@ -185,6 +186,7 @@ namespace controllers {
         // ==========================================
         Gait_info() {
             Gait_mode = none;
+            contact_num = 0;
             
             time_gait = 0.5;
             time_swing = 0.2;
