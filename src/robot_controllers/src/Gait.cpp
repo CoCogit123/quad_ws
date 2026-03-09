@@ -85,11 +85,12 @@ namespace controllers {
             gait_data.time_gait = 1.0;
             gait_data.Gait_ratio.setConstant(1.0);
             gait_data.Gait_offset.setZero();
+            break;
         //walk
         case Gait_type::walk:
             // 周期 0.8s, 占空比 0.75
             gait_data.contact_num = 3;
-            gait_data.time_gait = 2.0;
+            gait_data.time_gait = 1.2;
             gait_data.Gait_ratio.setConstant(0.75);
             // 偏移量
             gait_data.Gait_offset << 0.25, 0.75, 0.5, 0.0;

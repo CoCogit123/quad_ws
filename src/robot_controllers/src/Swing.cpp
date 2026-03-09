@@ -27,9 +27,11 @@ namespace controllers{
                 swing.world_POS_start_touch.col(i) = robot.world_POS.col(i);
             }
             // last_gait_type_[i] = gait.Gait_state[i];
-            /*****中间对称点****/
+            /*****中间对称点****/  //修改了robot.world_Vel_com 使用当前速度预测目标对称点 保证每次踩在对的位置上
             Pos_com_touch_ = robot.world_Pos_com + robot.world_Vel_des*(1-gait.Time_swing_degree[i])*gait.time_swing;
             yaw_touch_ = robot.euler[2] + robot.body_omega_des[2]*(1-gait.Time_swing_degree[i])*gait.time_swing;
+            // Pos_com_touch_ = robot.world_Pos_com;
+            // yaw_touch_ = robot.euler[2];
             //机体系的xy z等于0
             body_POS_mid_(0,i) = dir_x*robot.hx + robot.p_x_offest;
             body_POS_mid_(1,i) = dir_y*(robot.hy + robot.p_y_offest + robot.l1 );

@@ -73,6 +73,12 @@ void UIctr::createWindow(const char* windowTitle, bool saveVideo) {
 
      // 初始化 MuJoCo 可视化对象
     mjv_defaultOption(&opt);// 默认可视化选项
+    opt.flags[mjVIS_CONTACTPOINT] = 0;  // 显示接触点
+    opt.flags[mjVIS_CONTACTFORCE] = 0;  // 显示接触力箭头（长度代表力的大小）
+    opt.flags[mjVIS_COM] = 0;           // 显示整机质心（Center of Mass）的位置
+    opt.flags[mjVIS_PERTFORCE] = 0;     // 显示外部扰动力（鼠标拖拽时的力）
+    opt.flags[mjVIS_TRANSPARENT] = 0;   // 可以设为1让机器人半透明，方便看内部连杆
+
     mjv_defaultScene(&scn); // 默认场景
     mjr_defaultContext(&con); // 默认渲染上下文
     mjv_makeScene(mj_model, &scn, 2000);              // 创建场景（容纳 2000 个物体）
@@ -128,13 +134,43 @@ void UIctr::updateScene() {
     mjv_updateScene(mj_model, mj_data, &opt, NULL, &cam, mjCAT_ALL, &scn); // 更新场景
     glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
     mjr_render(viewport, &scn, &con); // 渲染到视口
-    // 显示仿真时间
-    std::string timeStr = "Simulation Time: " + std::to_string(mj_data->time);
-    char buffer[100];
-    std::sprintf(buffer, "Time: %.3f", mj_data->time);
-    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPRIGHT, viewport, buffer, NULL, &con);
 
+    // 获取位置
+    double pos_x = mj_data->qpos[0];
+    double pos_y = mj_data->qpos[1];
+    double pos_z = mj_data->qpos[2];
+    // 获取四元数 (MuJoCo 默认顺序是 w, x, y, z)
+    double qw = mj_data->qpos[3];
+    double qx = mj_data->qpos[4];
+    double qy = mj_data->qpos[5];
+    double qz = mj_data->qpos[6];
+    // 四元数转欧拉角 (Roll, Pitch, Yaw)
+    double roll  = atan2(2 * (qw * qx + qy * qz), 1 - 2 * (qx * qx + qy * qy));
+    double pitch = asin(2 * (qw * qy - qz * qx));
+    double yaw   = atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz));
+    // 获取线速度 (基于全局坐标系或局部坐标系，qvel 0,1,2 是线速度)
+    double vel_x = mj_data->qvel[0];
+    double vel_y = mj_data->qvel[1];
+    double vel_z = mj_data->qvel[2];
+    // 格式化文本
+    char text_left[1000];
+    char text_right[1000];
+    std::sprintf(text_left, 
+                "Sim Time\n"
+                "Position (X, Y, Z)\n"
+                "Euler RPY (deg)\n"
+                "Velocity (X, Y, Z)");
+    std::sprintf(text_right, 
+                "%.3f s\n"
+                "%.2f, %.2f, %.3f m\n"
+                "%.1f, %.1f, %.1f\n"
+                "%.2f, %.2f, %.2f m/s", 
+                mj_data->time,
+                pos_x, pos_y, pos_z-0.0189,
+                roll * 180.0 / 3.14159, pitch * 180.0 / 3.14159, yaw * 180.0 / 3.14159, // 转成角度更直观
+                vel_x, vel_y, vel_z);
 
+    mjr_overlay(mjFONT_NORMAL, mjGRID_TOPRIGHT, viewport, text_left, text_right, &con);
     // swap OpenGL buffers (blocking call due to v-sync)
     glfwSwapBuffers(window);// 交换前后缓冲区（显示渲染结果）
     // process pending GUI events, call GLFW callbacks

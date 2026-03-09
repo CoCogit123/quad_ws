@@ -2,6 +2,8 @@
 #include "Dynamics.h"
 #include <ros/ros.h>
 namespace controllers {
+    #define mpc_torque_debug
+    #define mpc_state_debug
 
 void Mpc::init(Robot_info& robot,ColVec<13> &q_weights_, ColVec<12> &r_weights_)
 {
@@ -93,7 +95,8 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
     for (int i = 0; i < HORIZON; ++i) {
         double t = (i + 1) * dt;
         //姿态 
-        X_des.segment(i*13+0,3).setZero(); //roll pitch 强制为0；
+        X_des[i*13+0] = 0;
+        X_des[i*13+1] = 0;
         X_des[i*13+2] = robot.euler[2] + robot.world_omega_des[2] * t; //yaw
         //位置
         X_des.segment(i*13+3,3) = robot.world_Pos_com + robot.world_Vel_des * t;
@@ -260,6 +263,127 @@ void Mpc::update(Robot_info& robot,Gait_info& gait,double dt)
 
 }
 
+void Mpc::debug(Robot_info& robot)
+{
 
+    #ifdef mpc_torque_debug
+    // =========================================================
+    // 力矩打印
+    // =========================================================
+    // 安全检查
+    if (qp_solution.size() >= 12) {
+        // 提取前 12 个元素，避免重复调用 head()
+        Eigen::VectorXd f = qp_solution.head(12);
+
+        // 设置打印格式：固定小数点，保留3位
+        std::cout << std::fixed << std::setprecision(3);
+
+        // 打印表头 (时间 + 腿名称)
+        std::cout << "\n\033[1;33m[QP ] " << "\033[0m" << std::endl;
+        std::cout << "      | " 
+                << std::setw(9) << "FL" << " | " 
+                << std::setw(9) << "FR" << " | " 
+                << std::setw(9) << "RL" << " | " 
+                << std::setw(9) << "RR" << " |" << std::endl;
+        std::cout << "-------------------------------------------------" << std::endl;
+
+        // 定义行名
+        const char* axis_names[3] = {"Fx (N)", "Fy (N)", "Fz (N)"};
+
+        // 循环打印 3 行 (Fx, Fy, Fz)
+        for (int axis = 0; axis < 3; ++axis) {
+            std::cout << std::setw(5) << axis_names[axis] << " | ";
+            
+            // 循环打印 4 列 (FL, FR, RL, RR)
+            for (int leg = 0; leg < 4; ++leg) {
+                // 索引逻辑：第 leg 条腿的第 axis 分量
+                int index = leg * 3 + axis; 
+                
+                double val = f(index);
+                
+                // 根据数值正负设置颜色 (可选：正数绿色，负数红色，0灰色)
+                if(std::abs(val) < 0.001) std::cout << "\033[90m"; // 灰色
+                else if(val >= 0)         std::cout << "\033[32m"; // 绿色
+                else                      std::cout << "\033[31m"; // 红色
+
+                std::cout << std::setw(9) << val << "\033[0m | ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "=================================================" << std::endl;
+
+    } else {
+        std::cout << "[QP Result] Error: Solution size too small (" 
+                << qp_solution.size() << ")" << std::endl;
+    }
+    #endif
+
+    #ifdef mpc_state_debug
+    // --------------------------------------------------------------------------------
+    // [新增] 自定义 12 个状态的误差范围阈值 
+    // 顺序: Roll, Pitch, Yaw(0-2), PosX, PosY, PosZ(3-5), OmgX, OmgY, OmgZ(6-8), VelX, VelY, VelZ(9-11)
+    // --------------------------------------------------------------------------------
+    // 低于 t_small 为【误差很小 (灰色)】
+    std::vector<double> t_small = { 1.0, 1.0, 1.0,   0.01, 0.01, 0.01,   0.1, 0.1, 0.1,   0.05, 0.05, 0.05 }; 
+    // 介于 t_small 和 t_med 之间为【误差中等 (默认白色)】
+    std::vector<double> t_med   = { 3.0, 3.0, 3.0,   0.05, 0.05, 0.03,   0.5, 0.5, 0.5,   0.15, 0.15, 0.15 }; 
+    // 介于 t_med 和 t_large 之间为【误差大 (黄色)】
+    // 高于 t_large 为【误差非常大 (红色)】
+    std::vector<double> t_large = { 5.0, 5.0, 5.0,   0.10, 0.10, 0.50,   1.0, 1.0, 1.0,   0.30, 0.30, 0.30 }; 
+
+    // 定义状态名称 (前12个状态，不包含g)
+    const char* state_names[12] = {
+        "Roll (deg) ", "Pitch (deg)", "Yaw (deg)  ",  // 0-2 (因为你乘了57.32，改名为deg更准确)
+        "Pos X (m)  ", "Pos Y (m)  ", "Pos Z (m)  ",  // 3-5
+        "Omg X (r/s)", "Omg Y (r/s)", "Omg Z (r/s)",  // 6-8
+        "Vel X (m/s)", "Vel Y (m/s)", "Vel Z (m/s)"   // 9-11
+    };
+
+    std::cout << "\n\033[1;36m[State Tracking] x_now vs X_des(k=0)\033[0m" << std::endl;
+    std::cout << "Idx | Name        |     x_now |     X_des |      Diff |" << std::endl;
+    std::cout << "--------------------------------------------------------" << std::endl;
+
+    // 遍历 12 个状态 (省略 g)
+    for (int i = 0; i < 12; ++i) {
+        double val_now = x_now(i);
+        // 安全检查：防止 X_des 为空
+        double val_des = X_des(i);
+
+        // 0,1,2 弧度转角度
+        if(i >= 0 && i <= 2) { 
+            val_now *= 57.32; 
+            val_des *= 57.32;
+        }
+        
+        double diff = val_des - val_now;
+        double abs_diff = std::abs(diff);
+
+        // 设置每一行的颜色：
+        std::string color;
+        if (abs_diff < t_small[i]) {
+            color = "\033[90m";       // 误差很小 (灰色)
+        } else if (abs_diff < t_med[i]) {
+            color = "\033[0m";        // 误差中等 (白色/终端默认色)
+        } else if (abs_diff < t_large[i]) {
+            color = "\033[33m";       // 误差大 (黄色)
+        } else {
+            color = "\033[1;31m";     // 误差非常大 (红色加粗)
+        }
+
+        std::cout << std::fixed << std::setprecision(4);
+        
+        std::cout << std::setw(3) << i << " | " 
+                << state_names[i] << " | " 
+                << color
+                << std::setw(9) << val_now << " | " 
+                << std::setw(9) << val_des << " | " 
+                << std::setw(9) << diff << "\033[0m |" << std::endl;
+    }
+
+    ROS_INFO("z_des is %f", robot.z_des);
+    std::cout << "========================================================" << std::endl;
+
+    #endif
+}
 
 }

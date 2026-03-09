@@ -1,5 +1,5 @@
-#ifndef MPC_H
-#define MPC_H
+#ifndef WBC_H
+#define WBC_H
 
 #include "Common.h"
 #include "Utils.h"
@@ -21,7 +21,7 @@ namespace controllers {
          * @brief 构造函数
          */
         Wbc(Robot_info &robot){
-            //提前分配内存
+            //提前分配内存 按照最大的分配
             J_pre[0].resize(12,18); J_pre[1].resize(3,18); J_pre[2].resize(3,18); J_pre[3].resize(12,18);
             J[0].resize(12,18); J[1].resize(3,18); J[2].resize(3,18); J[3].resize(12,18);
             Jdtqdt[0].resize(12); Jdtqdt[1].resize(3); Jdtqdt[2].resize(3); Jdtqdt[3].resize(12);
@@ -35,7 +35,7 @@ namespace controllers {
             }
 
             qp_G.resize(18,18);  qp_g0.resize(18); qp_g0.setZero();
-            dyn_CE.resize(6,18);  qp_CE.resize(18,6);  qp_ce.resize(18);
+            dyn_CE.resize(6,18);  qp_CE.resize(18,6);  qp_ce.resize(6);
             dyn_CI.resize(40,18);  qp_CI.resize(18,40);  qp_ci.resize(40);
             //初始化权重
             for(int i=0;i<6;i++)
@@ -63,6 +63,23 @@ namespace controllers {
             lbi.resize(5);
             ubi << 1e10, 1e10, 1e10, 1e10, 150;
             lbi.setZero();
+
+            //最终融合后的
+            end_q_ddt.resize(18);
+            end_f.resize(12);
+            end_torque.resize(18);
+
+            //pid
+            ori_kp.diagonal() = Eigen::Vector3d(0, 0, 0);
+            ori_kd.diagonal() = Eigen::Vector3d(4, 4, 4);
+
+            trans_kp.diagonal() = Eigen::Vector3d(0, 0, 0);
+            trans_kd.diagonal() = Eigen::Vector3d(4, 4, 4);
+
+            swing_kp.diagonal() = Eigen::Vector3d(10, 10, 10);
+            swing_kd.diagonal() = Eigen::Vector3d(1, 1, 1);
+
+
         }
         /**
          * @brief 核心更新函数 nullspace求解 暴力迭代
@@ -71,15 +88,18 @@ namespace controllers {
         void kin_wbc(Robot_info &robot,Gait_info &gait,Swing_info &swing,double dt);
 
         /**
-         * @brief 核心更新函数 浮动基动力学部分
+         * @brief 核心更新函数 浮动基动力学部分 并得到结果
          * 
          */
-        void wbic(Robot_info &robot,Gait_info &gait,Swing_info &swing);
+        void wbic(Robot_info &robot,Gait_info &gait,Wbc_info &wbc);
+
+        void debug(Wbc_info &wbc);
+
         
     private:
         // ----------------
         // kin_wbc
-        // J_pre 和 J Jdtqdt等除了目标量都分配了可能的最大维度 然后使用block调用减少内存分配
+        // J_pre 和 J Jdtqdt等除了目标量都分配了可能的最大维度 再去resize就不会触发重新进行内存分配
         // ----------------
         //目标量 
         Vector18d q_delta_cmd[4];
@@ -128,18 +148,21 @@ namespace controllers {
         quadprogpp::Vector<double> quadprog_ci0;
         //结果
         Eigen::VectorXd qp_result;
-        
+
+        Eigen::VectorXd end_q_ddt; //最终融合后的
+        Eigen::VectorXd end_f;
+        Eigen::VectorXd end_torque;
 
         //控制参数
-        double ori_kp;
-        double ori_kd;
-        double trans_kp;
-        double trans_kd;
-        double swing_kp;
-        double swing_kd;
+        Eigen::DiagonalMatrix<double,3> ori_kp;
+        Eigen::DiagonalMatrix<double,3> ori_kd;
+        Eigen::DiagonalMatrix<double,3> trans_kp;
+        Eigen::DiagonalMatrix<double,3> trans_kd;
+        Eigen::DiagonalMatrix<double,3> swing_kp;
+        Eigen::DiagonalMatrix<double,3> swing_kd;
 
-        double weight_q1;//运动学的权重
-        double weight_q2;//动力学（力矩）的权重
+        double weight_q1 = 1;//运动学的权重
+        double weight_q2 = 0.001;//动力学（力矩）的权重
 
         // ================= 1. 模板化：Eigen 任意矩阵表达式 → QuadProg++ Matrix =================
         // 支持 MatrixXd、MatrixXd::block()、MatrixXd::topLeftCorner() 等所有 Eigen 矩阵表达式

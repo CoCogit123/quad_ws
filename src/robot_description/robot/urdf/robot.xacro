@@ -33,4 +33,125 @@
                 <rpyOffsets>0 0 0</rpyOffsets>
             </plugin>
         </gazebo>
+
+        <gazebo reference="base_link">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+
+        <!--  leg 1-->
+        <gazebo reference="leg1_link1">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <material>Gazebo/DarkGrey</material>
+        </gazebo>
+        <gazebo reference="leg1_link2">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+        <gazebo reference="leg1_link3">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+        </gazebo>
+        <gazebo reference="leg1_link4">
+            <mu1>0.6</mu1>
+            <mu2>0.6</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+
+        <!--  leg 2-->
+        <gazebo reference="leg2_link1">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <material>Gazebo/DarkGrey</material>
+        </gazebo>
+        <gazebo reference="leg2_link2">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+        <gazebo reference="leg2_link3">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+        </gazebo>
+        <gazebo reference="leg2_link4">
+            <mu1>0.6</mu1>
+            <mu2>0.6</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+
+        <!--  leg 3-->
+        <gazebo reference="leg3_link1">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <material>Gazebo/DarkGrey</material>
+        </gazebo>
+        <gazebo reference="leg3_link2">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+        <gazebo reference="leg3_link3">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+        </gazebo>
+        <gazebo reference="leg3_link4">
+            <mu1>0.6</mu1>
+            <mu2>0.6</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+
+        <!--  leg 4-->
+        <gazebo reference="leg4_link1">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <material>Gazebo/DarkGrey</material>
+        </gazebo>
+        <gazebo reference="leg4_link2">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+        <gazebo reference="leg4_link3">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <self_collide>1</self_collide>
+        </gazebo>
+        <gazebo reference="leg4_link4">
+            <mu1>0.6</mu1>
+            <mu2>0.6</mu2>
+            <self_collide>1</self_collide>
+            <material>Gazebo/DarkGrey</material>
+            <kp  value="1000000.0"/>
+            <kd  value="1.0"/>
+        </gazebo>
+
+
 </robot>

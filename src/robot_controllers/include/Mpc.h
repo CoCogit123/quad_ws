@@ -7,7 +7,7 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/MatrixFunctions>
 
-#define use_solver 0  // 0:osqp-eigen  1:qpoases
+#define use_solver 1  // 0:osqp-eigen  1:qpoases
 
 #if use_solver == 1   //qpoases
     #include <qpOASES.hpp>
@@ -61,6 +61,8 @@ namespace controllers {
             // 核心计算函数
             void update(Robot_info& robot,Gait_info& gait,double dt);
 
+            void debug(Robot_info& robot);
+
             bool mpc_init_flag = false;
             ColVec<12 * HORIZON> qp_solution;
 
@@ -68,7 +70,7 @@ namespace controllers {
             ColVec<13 * HORIZON> X_des;//期望状态（HORIZON周期）
 
         private:
-            double f_max = 150.0;
+            double f_max = 100.0;
             double protect_degree = 1.0;//递推期望轨迹的保护堵转系数 越大越想改变状态
 
             // 动力学矩

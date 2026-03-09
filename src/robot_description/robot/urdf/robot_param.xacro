@@ -10,8 +10,8 @@
         <xacro:property name="meshes_dir" value="package://robot_description/robot/meshes"/>
     <!--电机的参数-->
         <!--前两个关节-->
-        <xacro:property name="motor1_damping" value="0.01"/>
-        <xacro:property name="motor1_friction" value="0.2"/>
+        <xacro:property name="motor1_damping" value="1e-1"/>
+        <xacro:property name="motor1_friction" value="1e-2"/>
         <xacro:property name="motor1_torque" value="36.0"/>
         <xacro:property name="motor1_vel" value="17.3"/>
         <!--第三个关节-->

@@ -9,6 +9,7 @@
 #include "Manager.h"
 #include "Estimate.h"
 #include "Mpc.h"
+#include "Wbc.h"
 #include "Rviz_vision.h"
 //自定义消息包
 #include <custom_msgs/Motor_state.h>
@@ -26,11 +27,14 @@
 #include <ros/package.h> // 用于获取功能包路径
 #include <sensor_msgs/Imu.h>//imu消息包
 #include <sensor_msgs/Joy.h> //joy消息包
+#include <unistd.h> //CPU亲密性
+#include <sys/syscall.h> //CPU亲密性
 
 using namespace controllers;//自定义工作空间
 double get_loop_interval(void);
+bool setThreadCpuAffinity(std::thread& thread, int cpu_core);//设置cpu的亲密性
 
-#define using_time 1  //0：使用不停止的接近现实时间  1：使用mujoco时间
+#define using_time 0  //0：使用不停止的接近现实时间  1：使用mujoco时间
 double time_mujoco;
 int main(int argc, char** argv) {
     ros::init(argc, argv, "main");
@@ -43,6 +47,7 @@ int main(int argc, char** argv) {
     Robot_info robot_info;//机器人信息
     Gait_info gait_info;//步态信息     
     Swing_info swing_info;//摆动相信息
+    Wbc_info wbc_info;//wbc信息
     
     //类
     std::string urdf_pkg_dir = ros::package::getPath("robot_description");//urdf包路径
@@ -58,6 +63,7 @@ int main(int argc, char** argv) {
     ROS_INFO("Manager Solver Initialized Successfully.");
     Estimate Estimate_solver;
     Mpc Mpc_solver;
+    Wbc Wbc_solver(robot_info);
     // **************************
     // 订阅节点 设置回调函数
     // **************************
@@ -75,21 +81,23 @@ int main(int argc, char** argv) {
     ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>(
         "/imu", 10, 
         [&robot_info](const sensor_msgs::Imu::ConstPtr& msg) {
-            //一阶滤波过滤数据
-            // 定义滤波系数 (alpha 越小越平滑，但延迟越大)
-            const double alpha = 0.2; 
-            //获取当前帧原始数据
-            Eigen::Vector3d raw_acc(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
-            Eigen::Vector3d raw_omega(msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
-            //使用静态变量存储上一时刻的状态（初次运行时初始化为当前值）
-            static Eigen::Vector3d last_acc = raw_acc;
-            static Eigen::Vector3d last_omega = raw_omega;
-            //执行一阶低通滤波公式: y(k) = alpha * x(k) + (1 - alpha) * y(k-1)
-            robot_info.body_Acc = alpha * raw_acc + (1.0 - alpha) * last_acc;
-            robot_info.body_Omega = alpha * raw_omega + (1.0 - alpha) * last_omega;
-            //更新缓存，供下一帧使用
-            last_acc = robot_info.body_Acc;
-            last_omega = robot_info.body_Omega;
+            static MovingWindowFilter acc_x_filter(5);
+            static MovingWindowFilter acc_y_filter(5);
+            static MovingWindowFilter acc_z_filter(5);
+            static MovingWindowFilter omega_x_filter(5);
+            static MovingWindowFilter omega_y_filter(5);
+            static MovingWindowFilter omega_z_filter(5);
+
+            robot_info.body_Acc = Eigen::Vector3d(
+                acc_x_filter.CalculateAverage(msg->linear_acceleration.x),
+                acc_y_filter.CalculateAverage(msg->linear_acceleration.y),
+                acc_z_filter.CalculateAverage(msg->linear_acceleration.z)
+                );
+            robot_info.body_Omega = Eigen::Vector3d(
+                omega_x_filter.CalculateAverage(msg->angular_velocity.x),
+                omega_y_filter.CalculateAverage(msg->angular_velocity.y),
+                omega_z_filter.CalculateAverage(msg->angular_velocity.z)
+                );
 
             //处理四元数 (注意：ROS是x,y,z,w; Eigen构造函数是w,x,y,z)
             robot_info.quat_base = Eigen::Quaterniond(msg->orientation.w,msg->orientation.x,msg->orientation.y, msg->orientation.z);
@@ -112,10 +120,10 @@ int main(int argc, char** argv) {
         [&robot_info](const custom_msgs::Sim_info::ConstPtr& msg) {
             // 在这里可以直接访问并修改局部变量
             time_mujoco = msg->run_time;
-            robot_info.world_Pos_com = Vector3d(msg->sim_pos.x, msg->sim_pos.y, msg->sim_pos.z);
-            robot_info.world_Pos_com[2]-=0.0189;//减去足端半径 默认足端圆心为地面0处
-            robot_info.body_Vel_com = Vector3d(msg->sim_twist.linear.x,msg->sim_twist.linear.y,msg->sim_twist.linear.z);
-            robot_info.world_Vel_com = robot_info.body_Rot_world*robot_info.body_Vel_com;
+            // robot_info.world_Pos_com = Vector3d(msg->sim_pos.x, msg->sim_pos.y, msg->sim_pos.z);
+            // robot_info.world_Pos_com[2]-=0.0189;//减去足端半径 默认足端圆心为地面0处
+            // robot_info.body_Vel_com = Vector3d(msg->sim_twist.linear.x,msg->sim_twist.linear.y,msg->sim_twist.linear.z);
+            // robot_info.world_Vel_com = robot_info.body_Rot_world*robot_info.body_Vel_com;
         }
     );
     ros::Subscriber Keyboard_sub = nh.subscribe<custom_msgs::Joy_control>(
@@ -174,7 +182,7 @@ int main(int argc, char** argv) {
             ROS_WARN("run_flag is changed into %d",robot_info.run_flag);
         }
 
-        double com_vel_x_max = 0.6;
+        double com_vel_x_max = 0.5;
         double com_vel_y_max = 0.3;
         double com_omega_yaw_max = 0.5;
         if(robot_info.run_flag == true)
@@ -242,6 +250,10 @@ int main(int argc, char** argv) {
     // 线程 1  (500Hz) 
     // =========================================================
     std::thread thread_high([&]() {
+        // 线程内部获取真实PID（关键！和htop里的PID一致）
+        pid_t tid = syscall(SYS_gettid);
+        ROS_INFO("[500Hz] PID:%d", tid);
+
         double target_freq = 500.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.002s 目标delta_t
         ros::Rate rate(target_freq);
@@ -294,13 +306,21 @@ int main(int argc, char** argv) {
             }else if(Estimate_solver.init_flag == true)
             {
                 Estimate_solver.update(robot_info,gait_info,0.002);
+                robot_info.world_Pos_com = Vector3d(robot_info.X_est[0], robot_info.X_est[1], robot_info.X_est[2]);
+                robot_info.world_Vel_com = Vector3d(robot_info.X_est[3],robot_info.X_est[4],robot_info.X_est[5]);
+                robot_info.body_Vel_com = robot_info.body_Rot_world.transpose() * robot_info.world_Vel_com;
             }
             //Swing
             Swing_solver.update(swing_info,robot_info,gait_info);
             //Manager
             Manager_solver.update(robot_info,gait_info,swing_info);
             Manager_solver.motor_cmd(robot_info,motor_pub);
-
+            // Wbc
+            if(Mpc_solver.mpc_init_flag == true && gait_info.Gait_mode != none )
+            {
+                Wbc_solver.kin_wbc(robot_info,gait_info,swing_info,0.002);
+                Wbc_solver.wbic(robot_info,gait_info,wbc_info);
+            }
 
             // 打印调试信息 (每1秒打印一次，避免刷屏)
             // ROS_INFO_STREAM_THROTTLE(1.0, 
@@ -313,11 +333,15 @@ int main(int argc, char** argv) {
             rate.sleep();
         }
     });
+    setThreadCpuAffinity(thread_high,14);
 
     // =========================================================
     // 线程 2 (200Hz) 
     // =========================================================
     std::thread thread_low([&]() {
+        pid_t tid = syscall(SYS_gettid);
+        ROS_INFO("[200Hz] PID:%d", tid);
+        
         double target_freq = 200.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.005s 目标delta_t
         ros::Rate rate(target_freq);
@@ -364,10 +388,10 @@ int main(int argc, char** argv) {
                 if(Mpc_solver.mpc_init_flag == false)
                 {
                     Vector13d Q;
-                    // roll pitch yaw  x y z          wx wy wz          vx vy vz
-                    Q << 150, 150, 50,   0, 0, 80,    0.2, 0.2, 0.2,    0.3, 0.3, 0.3,   0;   
+                    // roll pitch yaw   x y z          wx wy wz          vx vy vz
+                    Q << 10, 10, 10,    1, 1, 80,    0, 0, 0.3,    0.5, 0.5, 1.0, 0;
                     Vector12d R;
-                    R.setConstant(1e-6);
+                    R.setConstant(5e-6);
                     Mpc_solver.init(robot_info,Q,R);
                     Mpc_solver.mpc_init_flag = true;
                     ROS_INFO("Mpc Solver Initialized Successfully.");
@@ -379,102 +403,6 @@ int main(int argc, char** argv) {
             // ---------------------------------------------
             // 调试
             // ---------------------------------------------
-            static ros::Time last_print_time = ros::Time::now(); // 静态变量，只初始化一次
-            ros::Time now = ros::Time::now();
-            // 检查时间间隔是否超过 0.1 秒
-            if ((now - last_print_time).toSec() >= 1 && Estimate_solver.init_flag == true ) { // 
-                
-                // 安全检查
-                if (Mpc_solver.qp_solution.size() >= 12) {
-                    // 提取前 12 个元素，避免重复调用 head()
-                    Eigen::VectorXd f = Mpc_solver.qp_solution.head(12);
-
-                    // 设置打印格式：固定小数点，保留3位
-                    std::cout << std::fixed << std::setprecision(3);
-
-                    // 打印表头 (时间 + 腿名称)
-                    std::cout << "\n\033[1;33m[QP ] " << "\033[0m" << std::endl;
-                    std::cout << "      | " 
-                            << std::setw(9) << "FL" << " | " 
-                            << std::setw(9) << "FR" << " | " 
-                            << std::setw(9) << "RL" << " | " 
-                            << std::setw(9) << "RR" << " |" << std::endl;
-                    std::cout << "-------------------------------------------------" << std::endl;
-
-                    // 定义行名
-                    const char* axis_names[3] = {"Fx (N)", "Fy (N)", "Fz (N)"};
-
-                    // 循环打印 3 行 (Fx, Fy, Fz)
-                    for (int axis = 0; axis < 3; ++axis) {
-                        std::cout << std::setw(5) << axis_names[axis] << " | ";
-                        
-                        // 循环打印 4 列 (FL, FR, RL, RR)
-                        for (int leg = 0; leg < 4; ++leg) {
-                            // 索引逻辑：第 leg 条腿的第 axis 分量
-                            // 假设排列为 [FLx, FLy, FLz, FRx, FRy, FRz ...]
-                            int index = leg * 3 + axis; 
-                            
-                            double val = f(index);
-                            
-                            // 根据数值正负设置颜色 (可选：正数绿色，负数红色，0灰色)
-                            if(std::abs(val) < 0.001) std::cout << "\033[90m"; // 灰色
-                            else if(val >= 0)         std::cout << "\033[32m"; // 绿色
-                            else                      std::cout << "\033[31m"; // 红色
-
-                            std::cout << std::setw(9) << val << "\033[0m | ";
-                        }
-                        std::cout << std::endl;
-                    }
-                    std::cout << "=================================================" << std::endl;
-
-                } else {
-                    std::cout << "[QP Result] Error: Solution size too small (" 
-                            << Mpc_solver.qp_solution.size() << ")" << std::endl;
-                }
-
-                // 定义状态名称 (根据 MPC 标准 13 维状态)
-                const char* state_names[13] = {
-                    "Roll (rad) ", "Pitch (rad)", "Yaw (rad)  ",  // 6-8 (或者欧拉角)
-                    "Pos X (m)  ", "Pos Y (m)  ", "Pos Z (m)  ",  // 0-2
-                    "Omg X (r/s)", "Omg Y (r/s)", "Omg Z (r/s)",  // 9-11
-                    "Vel X (m/s)", "Vel Y (m/s)", "Vel Z (m/s)",  // 3-5
-                    "Gravity (g)"                                  // 12
-                };
-
-                std::cout << "\n\033[1;36m[State Tracking] x_now vs X_des(k=0)\033[0m" << std::endl;
-                std::cout << "Idx | Name        |     x_now |     X_des |      Diff |" << std::endl;
-                std::cout << "--------------------------------------------------------" << std::endl;
-
-                // 遍历 13 个状态
-                for (int i = 0; i < 13; ++i) {
-                    double val_now = Mpc_solver.x_now(i);
-                    // 安全检查：防止 X_des 为空
-                    double val_des = Mpc_solver.X_des(i);
-
-                    if(i>=0&&i<=2) { val_now*=57.32; val_des*=57.32;}
-                    double diff = val_des - val_now;
-
-                    // 设置每一行的颜色：
-                    // 如果误差很小(灰色)，误差中等(白色)，误差大(红色/黄色)
-                    std::string color = "\033[0m"; // 默认白色
-                    if (std::abs(diff) < 0.01) color = "\033[90m";       // 灰色 (Tracking很好)
-                    else if (std::abs(diff) > 0.1) color = "\033[1;31m"; // 红色加粗 (偏差大)
-                    else if (std::abs(diff) > 0.05) color = "\033[33m";  // 黄色 (有偏差)
-
-                    std::cout << std::fixed << std::setprecision(4);
-                    
-                    std::cout << std::setw(3) << i << " | " 
-                            << state_names[i] << " | " 
-                            << color
-                            << std::setw(9) << val_now << " | " 
-                            << std::setw(9) << val_des << " | " 
-                            << std::setw(9) << diff << "\033[0m |" << std::endl;
-                }
-                ROS_INFO("z_des is %f",robot_info.z_des);
-                std::cout << "========================================================" << std::endl;
-
-                last_print_time = now;
-            }
 
             // // 打印调试信息 (每1秒打印一次，避免刷屏)
             // ROS_INFO_STREAM_THROTTLE(1.0, 
@@ -487,13 +415,13 @@ int main(int argc, char** argv) {
             rate.sleep();
         }
     });
-
+    setThreadCpuAffinity(thread_low,15);
     // =========================================================
     // 线程 3 (200Hz)  用于打印调试数据
     // =========================================================
     std::thread thread_debug([&]() {
         ros::Duration(5.0).sleep();
-        double target_freq = 200.0;//目标hz
+        double target_freq = 100.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.01s 目标delta_t
         ros::Rate rate(target_freq);
         #if using_time == 0
@@ -537,15 +465,31 @@ int main(int argc, char** argv) {
             // ---------------------------------------------
 
             /**************结构体数据调试****************/
-            // Debug_robot_info(robot_info,1);
+            Debug_robot_info(robot_info,5);
             // Debug_gait_info(gait_info,5);
             // Debug_swing_info(swing_info,5);
+            Debug_wbc_info(wbc_info,5);
+
+            /**************mpc调试****************/
+            static int mpc_count = 0;
+            if (++mpc_count >= (target_freq/10) && Estimate_solver.init_flag == true  ) { //10hz
+                // Mpc_solver.debug(robot_info);
+
+                mpc_count = 0;
+            }
+            /**************wbc调试****************/
+            static int wbc_count = 0;
+            if (++wbc_count >= (target_freq/10) && Mpc_solver.mpc_init_flag == true ) { //10hz
+                Wbc_solver.debug(wbc_info);
+
+                wbc_count = 0;
+            }
             
             /**************rviz显示调试****************/
             static int rviz_count = 0;
             
             static std::vector<double> joint_angles_vec(12);
-            if (++rviz_count >= 4) { // 200Hz / 4 = 50Hz，足够平滑了
+            if (++rviz_count >= (target_freq/50)) { // 100Hz / 2 = 50Hz，足够平滑了
                 for (int i = 0; i < 12; ++i) {
                     joint_angles_vec[i] = robot_info.Pos_motor[i];
                     if(i == 1 || i == 4 || i == 7 || i == 10) //关节2偏移45°
@@ -575,13 +519,15 @@ int main(int argc, char** argv) {
                 // rviz_vision.point_to_link(swing_info.world_POS_foot.col(1),"odom",31);
                 // rviz_vision.point_to_link(swing_info.world_POS_foot.col(2),"odom",32);
                 // rviz_vision.point_to_link(swing_info.world_POS_foot.col(3),"odom",33);
+
+                rviz_count = 0;
             }
 
             // 休眠对齐频率
             rate.sleep();
         }
     });
-
+    setThreadCpuAffinity(thread_debug,14);
     // =========================================================
     // 主线程逻辑
     // =========================================================
@@ -600,7 +546,8 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-double get_loop_interval(void) {
+double get_loop_interval(void) 
+{
     // 使用 static 变量存储上一次的时间点，函数结束后不会被销毁
     static auto last_time = std::chrono::steady_clock::now();
     static bool first_run = true;
@@ -623,4 +570,29 @@ double get_loop_interval(void) {
 
     // 防御性处理，防止由于高频调用导致的极小值或 0
     return (delta_t > 0.0) ? delta_t : 1e-6; 
+}
+
+bool setThreadCpuAffinity(std::thread& thread, int cpu_core) {
+    // 检查核心编号是否合法（比如4核CPU，核心编号0-3）
+    int cpu_count = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpu_core < 0 || cpu_core >= cpu_count) {
+        ROS_ERROR("CPU num error! system has %d core with 0-%d", cpu_count, cpu_count-1);
+        return false;
+    }
+
+    // 构造 CPU 核心掩码（只允许指定核心）
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);       // 清空掩码
+    CPU_SET(cpu_core, &cpuset); // 把指定核心加入掩码
+
+    // 设置线程的 CPU 亲密性
+    pthread_t thread_handle = thread.native_handle();
+    int ret = pthread_setaffinity_np(thread_handle, sizeof(cpu_set_t), &cpuset);
+    if (ret != 0) {
+        ROS_ERROR("set CPU error! code : %d", ret);
+        return false;
+    }
+
+    ROS_INFO("set CPU %d success ", cpu_core);
+    return true;
 }

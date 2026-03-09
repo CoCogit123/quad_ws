@@ -44,7 +44,7 @@ namespace controllers {
 
         double z_des = 0.075;//期望高度（速度累计来）         **********遥控器输入*************
 
-        double p_x_offest = -0.02;//足端默认支撑时的x偏移量（左上腿为标准 ）**********配置参数*************
+        double p_x_offest = -0.033;//足端默认支撑时的x偏移量 0.033几乎在原地且向后走很厉害 0.025向前走很厉害 （左上腿为标准 ）**********配置参数*************
         double p_y_offest = 0;//足端默认支撑时的y偏移量（左上腿为标准 ）    **********配置参数*************
         bool run_flag = false;//输入控制输出 急停！ 只控制电机输出 none模式run_flag = false或者是阻尼  
         bool safe_flag = true;//运行状态检测 第二层保证 出问题时进入阻尼模式
@@ -222,6 +222,18 @@ namespace controllers {
 
         double torque_kp = 100;
         double torque_kd = 1.0;
+    };
+
+    /**
+     * @brief wbc信息结构体
+     * 
+    */
+    struct Wbc_info {
+        Vector12d pos;        // 12个电机的控制角度
+        Vector12d vel;        // 12个电机的控制角速度
+        Vector12d torque;           // 12个电机的控制角速度
+        double kp;
+        double kd;
     };
 }
 

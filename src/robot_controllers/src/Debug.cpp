@@ -116,15 +116,15 @@ namespace controllers
         //     robot.h_q_dq[0], robot.h_q_dq[1], robot.h_q_dq[2], robot.h_q_dq[3], robot.h_q_dq[4], robot.h_q_dq[5]);
 
         // --- 2. 雅可比矩阵 J (浮动基 & 足端) ---
-        printf("\033[1;33m[Jacobian Matrices (Norms)]\033[0m\n");
-        printf("  J_base Norm: %10.4f\n", robot.J_base.norm());
-        // === 修改部分：打印完整的 J_foot 矩阵 ===
-        std::cout << "\033[1;36m[Full Jacobian Matrices]\033[0m" << std::endl;
-        const char* leg_names[4] = {"FL", "FR", "RL", "RR"};
-        for(int i = 0; i < 4; ++i) {
-            std::cout << ">>> J_foot[" << leg_names[i] << "]:\n" 
-                    << robot.J_foot[i] << std::endl << std::endl;
-        }
+        // printf("\033[1;33m[Jacobian Matrices (Norms)]\033[0m\n");
+        // printf("  J_base Norm: %10.4f\n", robot.J_base.norm());
+        // // === 修改部分：打印完整的 J_foot 矩阵 ===
+        // std::cout << "\033[1;36m[Full Jacobian Matrices]\033[0m" << std::endl;
+        // const char* leg_names[4] = {"FL", "FR", "RL", "RR"};
+        // for(int i = 0; i < 4; ++i) {
+        //     std::cout << ">>> J_foot[" << leg_names[i] << "]:\n" 
+        //             << robot.J_foot[i] << std::endl << std::endl;
+        // }
 
         // // --- 3. 漂移加速度 (Jdot * qdot) ---
         // printf("\033[1;33m[Drift Accelerations (Jdot * qdot)]\033[0m\n");
@@ -156,6 +156,22 @@ namespace controllers
     //         }
     //         if (i < 3) printf("----|-----------|-----------|---------|---------|----------\n");
     //     }
+
+        // --- Motor cmd (仅打印力矩 Torque，腿标签单独行显示) ---
+        printf("\033[1;33m[Motor Control Commands (Tau)]\033[0m\n");
+        printf(" ID |  Tau(Nm) \n");
+        printf("----|----------\n");
+        for (int i = 0; i < 4; ++i) {
+            const char* leg_labels[4] = {"FL", "FR", "RL", "RR"};
+            // 单独行显示腿标签（带颜色）
+            printf("\033[1;36m[%s]\033[0m\n", leg_labels[i]);
+            for (int j = 0; j < 3; ++j) {
+                int idx = i * 3 + j;
+                printf(" %02d | \033[1;32m%8.4f\033[0m\n",
+                    idx, robot.Torque_motor[idx]);
+            }
+            if (i < 3) printf("----|----------\n");
+        }
 
         printf("\033[1;33m-----------------------------------------------------------\033[0m\n");
     }
@@ -234,6 +250,80 @@ namespace controllers
         // }
 
         printf("\033[1;35m=================================================================\033[0m\n");
+    }
+
+    void Debug_wbc_info(const Wbc_info& wbc, double freq)
+    {
+        static double last_print_time = 0;
+        double current_time = ros::Time::now().toSec();
+        if (current_time - last_print_time < (1.0 / freq)) return;
+        last_print_time = current_time;
+
+        // 1. 定义表头和腿名称
+        const std::vector<std::string> leg_names = {"腿1", "腿2", "腿3", "腿4"};  // 左侧表头
+        const std::vector<std::string> top_headers = {"力矩", "位置误差", "速度"};    // 顶部表头
+
+        // 2. 打印表格顶部边框 + 顶部表头
+        std::cout << std::endl;
+        std::cout << std::setw(8) << std::left << " ";  // 左侧表头列的空白占位
+        for (const auto& header : top_headers) {
+            std::cout << std::setw(20) << std::left << header;  // 每个列宽20，左对齐
+        }
+        std::cout << std::endl;
+        std::cout << std::string(8 + 20*3, '-') << std::endl;  // 分隔线：8(左侧列) + 20*3(数据列)
+
+        // 3. 遍历4条腿，打印每行数据
+        for (int leg_idx = 0; leg_idx < 4; ++leg_idx) {
+            // 打印左侧表头（腿名称）
+            std::cout << std::setw(8) << std::left << leg_names[leg_idx];
+
+            // 计算当前腿的起始索引（每条腿占3个元素）
+            int start_idx = leg_idx * 3;
+
+            // -------- 提取当前腿的力矩数据 [t1,t2,t3] --------
+            std::vector<double> leg_torque = {
+                wbc.torque[start_idx],
+                wbc.torque[start_idx+1],
+                wbc.torque[start_idx+2]
+            };
+            // 格式化力矩为 [x,y,z] 字符串
+            std::string torque_str = "[" + 
+                                    std::to_string(leg_torque[0]) + "," + 
+                                    std::to_string(leg_torque[1]) + "," + 
+                                    std::to_string(leg_torque[2]) + "]";
+
+            // -------- 提取当前腿的位置数据 [p1,p2,p3] --------
+            std::vector<double> leg_pos = {
+                wbc.pos[start_idx],
+                wbc.pos[start_idx+1],
+                wbc.pos[start_idx+2]
+            };
+            std::string pos_str = "[" + 
+                                std::to_string(leg_pos[0]) + "," + 
+                                std::to_string(leg_pos[1]) + "," + 
+                                std::to_string(leg_pos[2]) + "]";
+
+            // -------- 提取当前腿的速度数据 [v1,v2,v3] --------
+            std::vector<double> leg_vel = {
+                wbc.vel[start_idx],
+                wbc.vel[start_idx+1],
+                wbc.vel[start_idx+2]
+            };
+            std::string vel_str = "[" + 
+                                std::to_string(leg_vel[0]) + "," + 
+                                std::to_string(leg_vel[1]) + "," + 
+                                std::to_string(leg_vel[2]) + "]";
+
+            // 打印当前行的力矩/位置/速度列
+            std::cout << std::setw(20) << std::left << torque_str;
+            std::cout << std::setw(20) << std::left << pos_str;
+            std::cout << std::setw(20) << std::left << vel_str;
+
+            std::cout << std::endl;  // 换行
+        }
+
+        printf("\033[1;35m=================================================================\033[0m\n");
+
     }
 
 }

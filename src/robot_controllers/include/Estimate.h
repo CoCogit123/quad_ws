@@ -3,9 +3,9 @@
 
 #include "Common.h"
 
-#define PROCESS_NOISE_POS 0.01 
-#define PROCESS_NOISE_VEL 0.01 
-#define PROCESS_NOISE_FOOT 0.01 
+#define PROCESS_NOISE_POS 0.02 
+#define PROCESS_NOISE_VEL 0.02
+#define PROCESS_NOISE_FOOT 0.002 
 
 #define SENSOR_NOISE_P 0.001
 #define SENSOR_NOISE_V 0.1

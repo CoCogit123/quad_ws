@@ -60,13 +60,13 @@ public:
                 std::cerr << "Error: Frame " << name << " not found in URDF!" << std::endl;
             }
         }
-        for(int i=0; i<4; i++) std::cout << "Foot " << i << " ID: " << foot_indices_[i] << std::endl;
-        // 在构造函数末尾添加
-        std::cout << "Model Structure:" << std::endl;
-        for(int i=0; i<model_.njoints; ++i) {
-            std::cout << "Joint " << i << ": " << model_.names[i] 
-                    << " (Parent: " << model_.parents[i] << ")" << std::endl;
-        }
+        // for(int i=0; i<4; i++) std::cout << "Foot " << i << " ID: " << foot_indices_[i] << std::endl;
+        // // 在构造函数末尾添加
+        // std::cout << "Model Structure:" << std::endl;
+        // for(int i=0; i<model_.njoints; ++i) {
+        //     std::cout << "Joint " << i << ": " << model_.names[i] 
+        //             << " (Parent: " << model_.parents[i] << ")" << std::endl;
+        // }
         // 3. 初始分配空间
         q_pin_ = Vector19d::Zero();
         v_pin_ = Vector18d::Zero();

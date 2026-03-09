@@ -5,6 +5,15 @@
     Vector12d R;
     R.setConstant(0.00001);//alpha > 1e-4过高，建议调整到1e-5
 
+这一次会左右乱晃动 qpoases
+    Vector13d Q;
+                    // roll pitch yaw               x y z          wx wy wz          vx vy vz
+                    Q << 10.0, 10.0, 0.5,   2.0,  2.0,  70.0,    0.1,  0.1,  0.05,    1.0,  1.0,  0.8,   0;   
+                    Vector12d R;
+                    R.setConstant(2e-6);
+
+    站立时 40N就是还算可以
+
 
     虽然下面的z可以了 但是调整到那个后 疯狂后退
 2.使用mit的不太行
@@ -35,3 +44,38 @@ osqp-eigen 也是一坨
                     Q << 150, 150, 50,   0, 0, 80,    0.2, 0.2, 0.2,    0.3, 0.3, 0.3,   0;   
                     Vector12d R;
                     R.setConstant(1e-6);
+
+
+//往后走挺稳定的
+Q << 0.5, 0.5, 10,    2, 2, 100,    0, 0, 0.3,    0.5, 0.5, 10.0, 0;
+                    Vector12d R;
+                    R.setConstant(4e-6);
+
+//wdf 改了状态估计 走的很稳
+Vector13d Q;
+                    // roll pitch yaw   x y z          wx wy wz          vx vy vz
+                    Q << 5.0, 5.0, 10,    5, 5, 100,    0, 0, 0.3,    0.5, 0.5, 0.5, 0;
+                    Vector12d R;
+                    R.setConstant(4e-6);
+//差不多 但是运行久了会炸
+Q << 5.0, 5.0, 10,    5, 5, 100,    0.1, 0.1, 0.3,    0.5, 0.5, 0.5, 0;
+                    Vector12d R;
+                    R.setConstant(4e-6);
+
+Vector13d Q;
+                    // roll pitch yaw   x y z          wx wy wz          vx vy vz
+                    Q << 5.0, 5.0, 10,    5, 5, 100,    0.1, 0.1, 0.3,    0.5, 0.5, 0.8, 0;
+                    Vector12d R;
+                    R.setConstant(4e-6);
+vz调整到3.0
+
+Q << 5,5, 10,    1, 1, 100,    0, 0, 0.3,    0.5, 0.5, 2.0, 0;
+                    Vector12d R;
+                    R.setConstant(5e-6);
+
+//可以了 但是时间一定要使用实际时间 不能仿真的
+Vector13d Q;
+                    // roll pitch yaw   x y z          wx wy wz          vx vy vz
+                    Q << 10, 10, 10,    1, 1, 80,    0, 0, 0.3,    0.4, 0.4, 1.0, 0;
+                    Vector12d R;
+                    R.setConstant(5e-6);

@@ -79,11 +79,29 @@ int main(int argc, char *argv[])
     ros::Publisher sim_info_pub =nh.advertise<custom_msgs::Sim_info>("/Sim_info",10);//发送出去sim_info
     ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("/imu", 10);//imu发送
     ros::Rate rate(1000);
+
+    double sim_time_multiplier = 1.0; // 默认 1.0 倍速（与现实同步）现实运行/仿真运行 <1 变慢 >1 加速
+    auto start_real_time = std::chrono::high_resolution_clock::now(); //起始时间
+
     while(ros::ok())
     {
-        //仿真部分
-        simstart = mj_data->time;
-        while (mj_data->time - simstart < 1.0 / 60.0 && uiController.runSim)
+        // 1. 获取当前真实世界时间，计算从起始到现在差了多少s
+        auto current_real_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> real_elapsed = current_real_time - start_real_time;
+        double real_dt = real_elapsed.count();
+
+        
+        
+        // 2. 真实时间差 × 倍率 = 仿真系统该前进的时间
+        double target_sim = real_dt * sim_time_multiplier;
+
+        if( !uiController.runSim )
+        {
+            start_time = mj_data->time;
+            start_real_time = std::chrono::high_resolution_clock::now(); //起始时间
+        }
+
+        while ( ( mj_data->time - start_time) < target_sim && uiController.runSim)
         {
             mj_step(mj_model, mj_data);
             mj_interface.updateSensorValues();
@@ -149,24 +167,25 @@ int main(int argc, char *argv[])
             imu_msg.linear_acceleration.z = mj_interface.baseAcc[2];
             imu_pub.publish(imu_msg);
 
-            double foot_force[4];
-            int adr[4];
-            adr[0] = mj_model->sensor_adr[foot1_sensor_id];
-            adr[1] = mj_model->sensor_adr[foot2_sensor_id];
-            adr[2] = mj_model->sensor_adr[foot3_sensor_id];
-            adr[3] = mj_model->sensor_adr[foot4_sensor_id];
-            foot_force[0] = mj_data->sensordata[adr[0]];
-            foot_force[1] = mj_data->sensordata[adr[1]];
-            foot_force[2] = mj_data->sensordata[adr[2]];
-            foot_force[3] = mj_data->sensordata[adr[3]];
-            static int step_counter;
-            if (step_counter % 500 == 0) { 
-                printf("Foot Force : %.3f\t %.3f\t %.3f\t %.3f\n", foot_force[0],foot_force[1], foot_force[2], foot_force[3]);
-            }
-            step_counter ++;
+            // double foot_force[4];
+            // int adr[4];
+            // adr[0] = mj_model->sensor_adr[foot1_sensor_id];
+            // adr[1] = mj_model->sensor_adr[foot2_sensor_id];
+            // adr[2] = mj_model->sensor_adr[foot3_sensor_id];
+            // adr[3] = mj_model->sensor_adr[foot4_sensor_id];
+            // foot_force[0] = mj_data->sensordata[adr[0]];
+            // foot_force[1] = mj_data->sensordata[adr[1]];
+            // foot_force[2] = mj_data->sensordata[adr[2]];
+            // foot_force[3] = mj_data->sensordata[adr[3]];
+            // static int step_counter;
+            // if (step_counter % 500 == 0) { 
+            //     printf("Foot Force : %.3f\t %.3f\t %.3f\t %.3f\n", foot_force[0],foot_force[1], foot_force[2], foot_force[3]);
+            // }
+            // step_counter ++;
         }
 
         uiController.updateScene();
+        rate.sleep();
     }
 
     uiController.Close();

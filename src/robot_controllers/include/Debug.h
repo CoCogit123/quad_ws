@@ -35,6 +35,13 @@ namespace controllers {
      */
     void Debug_swing_info(const Swing_info& swing, double freq);
 
+    /**
+     * @brief 打印wbc相关信息
+     * @param swing  Wbc_info结构体
+     * @param freq   打印频率 (Hz)
+     */
+    void Debug_wbc_info(const Wbc_info& wbc, double freq);
+
 
     }
 #endif
