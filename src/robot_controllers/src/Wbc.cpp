@@ -229,7 +229,7 @@ namespace controllers{
         end_torque = robot.M_q * end_q_ddt + robot.h_q_dq - end_J_T * end_f;
 
         wbc.torque = end_torque.segment(6,12);
-        wbc.pos = q_delta_cmd[3].segment(6,12);
+        wbc.delta_pos = q_delta_cmd[3].segment(6,12);
         wbc.vel = q_dt_cmd[3].segment(6,12);
     }
 

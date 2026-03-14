@@ -13,6 +13,8 @@
 #include <custom_msgs/Motor_control.h>
 #include <custom_msgs/Sim_info.h>
 #include <sensor_msgs/Imu.h>
+
+
 custom_msgs::Motor_state Motor_state_msgs;
 custom_msgs::Motor_control Motor_control_msgs;
 custom_msgs::Sim_info Sim_info_msgs;
@@ -44,7 +46,7 @@ mjModel* mj_model;
 mjData* mj_data;
 
 int main(int argc, char *argv[])
-{
+{   
     ros::init(argc,argv,"sim_mujoco");
     ros::NodeHandle nh("~");
     msgs_init();
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
     ros::Subscriber control_sub=nh.subscribe("/Motor_control",10,motor_control_callback);//接收控制电机数据
     ros::Publisher sim_info_pub =nh.advertise<custom_msgs::Sim_info>("/Sim_info",10);//发送出去sim_info
     ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("/imu", 10);//imu发送
-    ros::Rate rate(1000);
+    ros::Rate rate(500);
 
     double sim_time_multiplier = 1.0; // 默认 1.0 倍速（与现实同步）现实运行/仿真运行 <1 变慢 >1 加速
     auto start_real_time = std::chrono::high_resolution_clock::now(); //起始时间

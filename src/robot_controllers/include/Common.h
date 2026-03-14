@@ -229,7 +229,7 @@ namespace controllers {
      * 
     */
     struct Wbc_info {
-        Vector12d pos;        // 12个电机的控制角度
+        Vector12d delta_pos;        // 12个电机的控制角度
         Vector12d vel;        // 12个电机的控制角速度
         Vector12d torque;           // 12个电机的控制角速度
         double kp;

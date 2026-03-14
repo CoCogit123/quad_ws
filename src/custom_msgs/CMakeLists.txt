@@ -21,6 +21,7 @@ add_message_files(
   Motor_control.msg 
   Sim_info.msg
   Joy_control.msg
+  Debug_info.msg
 )
 # ========== 生成消息（依赖std_msgs） ==========​
 generate_messages(

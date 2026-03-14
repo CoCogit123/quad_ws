@@ -16,6 +16,7 @@
 #include <custom_msgs/Motor_control.h>
 #include <custom_msgs/Sim_info.h>
 #include <custom_msgs/Joy_control.h>
+#include <custom_msgs/Debug_info.h>
 // **************************
 // 其他头文件 
 // **************************
@@ -23,6 +24,7 @@
 #include <thread>
 #include <string>
 #include <iostream>
+#include <chrono> //系统时间
 #include <iomanip> // 用于控制输出格式
 #include <ros/package.h> // 用于获取功能包路径
 #include <sensor_msgs/Imu.h>//imu消息包
@@ -36,6 +38,7 @@ bool setThreadCpuAffinity(std::thread& thread, int cpu_core);//设置cpu的亲�
 
 #define using_time 0  //0：使用不停止的接近现实时间  1：使用mujoco时间
 double time_mujoco;
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "main");
     ros::NodeHandle nh("~");
@@ -245,7 +248,14 @@ int main(int argc, char** argv) {
     // **************************
     // 发布节点
     // **************************
+    //电机控制节点
     ros::Publisher motor_pub = nh.advertise<custom_msgs::Motor_control>("/Motor_control", 10);
+    //Debug节点
+    ros::Publisher debug_pub = nh.advertise<custom_msgs::Debug_info>("/Debug_info", 10);
+
+
+
+    double thread_dt[4];
     // =========================================================
     // 线程 1  (500Hz) 
     // =========================================================
@@ -258,13 +268,12 @@ int main(int argc, char** argv) {
         double expected_cycle_time = 1.0 / target_freq; // 0.002s 目标delta_t
         ros::Rate rate(target_freq);
         #if using_time == 0
-            // 初始化时间记录 ros::WallTime不会被暂停
-            ros::WallTime last_start_time = ros::WallTime::now();
-            ros::WallTime current_start_time = ros::WallTime::now();
-            //运行时间
-            ros::WallTime thread_start_time = ros::WallTime::now();
-            double thread_runtime=0.0;
-            //delta_t
+            auto last_start_time = std::chrono::steady_clock::now();
+            auto current_start_time = std::chrono::steady_clock::now();
+            // 运行时间起点
+            auto thread_start_time = std::chrono::steady_clock::now();
+            double thread_runtime = 0.0;
+            // delta_t
             double thread_delta_t_;
         #elif using_time == 1
             // 初始化时间记录 ros::WallTime不会被暂停
@@ -280,10 +289,13 @@ int main(int argc, char** argv) {
             // double dddt = get_loop_interval();
             // 记录循环开始时间
             #if using_time == 0
-                current_start_time = ros::WallTime::now();
-                thread_delta_t_ = (current_start_time - last_start_time).toSec();
+                current_start_time = std::chrono::steady_clock::now();
+                // 计算差值并转换为秒 (double)，相当于之前的 .toSec()
+                thread_delta_t_ = std::chrono::duration<double>(current_start_time - last_start_time).count();
                 last_start_time = current_start_time;
-                thread_runtime = (current_start_time-thread_start_time).toSec();
+                // 计算总运行时间并转换为秒
+                thread_runtime = std::chrono::duration<double>(current_start_time - thread_start_time).count();
+                thread_dt[0] = thread_delta_t_;
             #elif using_time == 1
                 current_start_time = time_mujoco;
                 thread_delta_t_ = (current_start_time - last_start_time);
@@ -313,7 +325,7 @@ int main(int argc, char** argv) {
             //Swing
             Swing_solver.update(swing_info,robot_info,gait_info);
             //Manager
-            Manager_solver.update(robot_info,gait_info,swing_info);
+            Manager_solver.update(robot_info,gait_info,swing_info,wbc_info);
             Manager_solver.motor_cmd(robot_info,motor_pub);
             // Wbc
             if(Mpc_solver.mpc_init_flag == true && gait_info.Gait_mode != none )
@@ -321,7 +333,6 @@ int main(int argc, char** argv) {
                 Wbc_solver.kin_wbc(robot_info,gait_info,swing_info,0.002);
                 Wbc_solver.wbic(robot_info,gait_info,wbc_info);
             }
-
             // 打印调试信息 (每1秒打印一次，避免刷屏)
             // ROS_INFO_STREAM_THROTTLE(1.0, 
             //     "\n[500Hz Thread]"
@@ -342,17 +353,16 @@ int main(int argc, char** argv) {
         pid_t tid = syscall(SYS_gettid);
         ROS_INFO("[200Hz] PID:%d", tid);
         
-        double target_freq = 200.0;//目标hz
+        double target_freq = 160.0;//目标hz
         double expected_cycle_time = 1.0 / target_freq; // 0.005s 目标delta_t
         ros::Rate rate(target_freq);
         #if using_time == 0
-            // 初始化时间记录 ros::WallTime不会被暂停
-            ros::WallTime last_start_time = ros::WallTime::now();
-            ros::WallTime current_start_time = ros::WallTime::now();
-            //运行时间
-            ros::WallTime thread_start_time = ros::WallTime::now();
-            double thread_runtime=0.0;
-            //delta_t
+            auto last_start_time = std::chrono::steady_clock::now();
+            auto current_start_time = std::chrono::steady_clock::now();
+            // 运行时间起点
+            auto thread_start_time = std::chrono::steady_clock::now();
+            double thread_runtime = 0.0;
+            // delta_t
             double thread_delta_t_;
         #elif using_time == 1
             // 初始化时间记录 ros::WallTime不会被暂停
@@ -369,10 +379,13 @@ int main(int argc, char** argv) {
             double dddt = get_loop_interval();
             // 记录循环开始时间
             #if using_time == 0
-                current_start_time = ros::WallTime::now();
-                thread_delta_t_ = (current_start_time - last_start_time).toSec();
+                current_start_time = std::chrono::steady_clock::now();
+                // 计算差值并转换为秒 (double)，相当于之前的 .toSec()
+                thread_delta_t_ = std::chrono::duration<double>(current_start_time - last_start_time).count();
                 last_start_time = current_start_time;
-                thread_runtime = (current_start_time-thread_start_time).toSec();
+                // 计算总运行时间并转换为秒
+                thread_runtime = std::chrono::duration<double>(current_start_time - thread_start_time).count();
+                thread_dt[1] = thread_delta_t_;
             #elif using_time == 1
                 current_start_time = time_mujoco;
                 thread_delta_t_ = (current_start_time - last_start_time);
@@ -396,10 +409,9 @@ int main(int argc, char** argv) {
                     Mpc_solver.mpc_init_flag = true;
                     ROS_INFO("Mpc Solver Initialized Successfully.");
                 }else{
-                    Mpc_solver.update(robot_info,gait_info,0.005);
+                    Mpc_solver.update(robot_info,gait_info,0.00625);
                 }
             }
-
             // ---------------------------------------------
             // 调试
             // ---------------------------------------------
@@ -425,13 +437,12 @@ int main(int argc, char** argv) {
         double expected_cycle_time = 1.0 / target_freq; // 0.01s 目标delta_t
         ros::Rate rate(target_freq);
         #if using_time == 0
-            // 初始化时间记录 ros::WallTime不会被暂停
-            ros::WallTime last_start_time = ros::WallTime::now();
-            ros::WallTime current_start_time = ros::WallTime::now();
-            //运行时间
-            ros::WallTime thread_start_time = ros::WallTime::now();
-            double thread_runtime=0.0;
-            //delta_t
+            auto last_start_time = std::chrono::steady_clock::now();
+            auto current_start_time = std::chrono::steady_clock::now();
+            // 运行时间起点
+            auto thread_start_time = std::chrono::steady_clock::now();
+            double thread_runtime = 0.0;
+            // delta_t
             double thread_delta_t_;
         #elif using_time == 1
             // 初始化时间记录 ros::WallTime不会被暂停
@@ -449,10 +460,12 @@ int main(int argc, char** argv) {
         while (ros::ok()) {
             // 记录循环开始时间
             #if using_time == 0
-                current_start_time = ros::WallTime::now();
-                thread_delta_t_ = (current_start_time - last_start_time).toSec();
+                current_start_time = std::chrono::steady_clock::now();
+                // 计算差值并转换为秒 (double)，相当于之前的 .toSec()
+                thread_delta_t_ = std::chrono::duration<double>(current_start_time - last_start_time).count();
                 last_start_time = current_start_time;
-                thread_runtime = (current_start_time-thread_start_time).toSec();
+                // 计算总运行时间并转换为秒
+                thread_runtime = std::chrono::duration<double>(current_start_time - thread_start_time).count();
             #elif using_time == 1
                 current_start_time = time_mujoco;
                 thread_delta_t_ = (current_start_time - last_start_time);
@@ -465,29 +478,49 @@ int main(int argc, char** argv) {
             // ---------------------------------------------
 
             /**************结构体数据调试****************/
-            Debug_robot_info(robot_info,5);
+            // Debug_robot_info(robot_info,5);
             // Debug_gait_info(gait_info,5);
             // Debug_swing_info(swing_info,5);
-            Debug_wbc_info(wbc_info,5);
+            
 
             /**************mpc调试****************/
             static int mpc_count = 0;
             if (++mpc_count >= (target_freq/10) && Estimate_solver.init_flag == true  ) { //10hz
                 // Mpc_solver.debug(robot_info);
-
+                // ROS_INFO("common dt is %lf hz is %lf",thread_dt[0],1/thread_dt[0]);
+                // ROS_INFO("mpc dt is %lf hz is %lf",thread_dt[1],1/thread_dt[1]);
                 mpc_count = 0;
             }
             /**************wbc调试****************/
             static int wbc_count = 0;
             if (++wbc_count >= (target_freq/10) && Mpc_solver.mpc_init_flag == true ) { //10hz
-                Wbc_solver.debug(wbc_info);
-
+                // Wbc_solver.debug(wbc_info);
+                Debug_wbc_info(wbc_info,5);
                 wbc_count = 0;
             }
-            
+
+            /**************debug调试****************/
+            custom_msgs::Debug_info Debug_msg;
+            // 1. 质心世界位置 com_pos_world
+            Debug_msg.com_pos_world.x = robot_info.world_Pos_com[0];
+            Debug_msg.com_pos_world.y = robot_info.world_Pos_com[1];
+            Debug_msg.com_pos_world.z = robot_info.world_Pos_com[2];
+            // 2. 质心世界速度 com_vel_world
+            Debug_msg.com_vel_world.x = robot_info.world_Vel_com[0];
+            Debug_msg.com_vel_world.y = robot_info.world_Vel_com[1];
+            Debug_msg.com_vel_world.z = robot_info.world_Vel_com[2];
+            // 3. 质心机体欧拉角 com_euler_body (Roll, Pitch, Yaw)
+            Debug_msg.com_euler_body.x = robot_info.euler[0];
+            Debug_msg.com_euler_body.y = robot_info.euler[1];
+            Debug_msg.com_euler_body.z = robot_info.euler[2];
+            // 4. 质心机体角速度 com_omega_body (wx, wy, wz)
+            Debug_msg.com_omega_body.x = robot_info.body_Omega[0];
+            Debug_msg.com_omega_body.y = robot_info.body_Omega[1];
+            Debug_msg.com_omega_body.z = robot_info.body_Omega[2];
+            debug_pub.publish(Debug_msg);
+
             /**************rviz显示调试****************/
             static int rviz_count = 0;
-            
             static std::vector<double> joint_angles_vec(12);
             if (++rviz_count >= (target_freq/50)) { // 100Hz / 2 = 50Hz，足够平滑了
                 for (int i = 0; i < 12; ++i) {
@@ -527,7 +560,7 @@ int main(int argc, char** argv) {
             rate.sleep();
         }
     });
-    setThreadCpuAffinity(thread_debug,14);
+    // setThreadCpuAffinity(thread_debug,13);
     // =========================================================
     // 主线程逻辑
     // =========================================================

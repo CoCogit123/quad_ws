@@ -11,7 +11,7 @@ namespace controllers {
 class Manager{
     public:Manager(){}
 
-        void update(Robot_info &robot,Gait_info &gait,Swing_info &swing);
+        void update(Robot_info &robot,Gait_info &gait,Swing_info &swing,Wbc_info &wbc);
 
         void motor_cmd(const Robot_info& robot, ros::Publisher& pub);
 
@@ -48,6 +48,11 @@ class Manager{
          */
         void damping_control(Robot_info &robot);
 
+        /**
+         * @brief 混合控制
+         * @param 
+         */
+        void wbc_control(Robot_info &robot,Gait_info &gait,Wbc_info &wbc);
 };
 }
 #endif 

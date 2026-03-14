@@ -294,9 +294,9 @@ namespace controllers
 
             // -------- 提取当前腿的位置数据 [p1,p2,p3] --------
             std::vector<double> leg_pos = {
-                wbc.pos[start_idx],
-                wbc.pos[start_idx+1],
-                wbc.pos[start_idx+2]
+                wbc.delta_pos[start_idx],
+                wbc.delta_pos[start_idx+1],
+                wbc.delta_pos[start_idx+2]
             };
             std::string pos_str = "[" + 
                                 std::to_string(leg_pos[0]) + "," + 

@@ -69,16 +69,16 @@ namespace controllers {
             end_f.resize(12);
             end_torque.resize(18);
 
-            //pid
-            ori_kp.diagonal() = Eigen::Vector3d(0, 0, 0);
-            ori_kd.diagonal() = Eigen::Vector3d(4, 4, 4);
-
-            trans_kp.diagonal() = Eigen::Vector3d(0, 0, 0);
-            trans_kd.diagonal() = Eigen::Vector3d(4, 4, 4);
-
-            swing_kp.diagonal() = Eigen::Vector3d(10, 10, 10);
-            swing_kd.diagonal() = Eigen::Vector3d(1, 1, 1);
-
+            //pid 
+            //转动
+            ori_kp.diagonal() = Eigen::Vector3d(100, 100, 100);
+            ori_kd.diagonal() = Eigen::Vector3d(5, 5, 5);
+            //平动
+            trans_kp.diagonal() = Eigen::Vector3d(100, 100, 100);
+            trans_kd.diagonal() = Eigen::Vector3d(5, 5, 5);
+            //摆动相
+            swing_kp.diagonal() = Eigen::Vector3d(100, 100, 100);
+            swing_kd.diagonal() = Eigen::Vector3d(5, 5, 5);
 
         }
         /**
@@ -153,7 +153,7 @@ namespace controllers {
         Eigen::VectorXd end_f;
         Eigen::VectorXd end_torque;
 
-        //控制参数
+        //控制参数 nullspace 部分
         Eigen::DiagonalMatrix<double,3> ori_kp;
         Eigen::DiagonalMatrix<double,3> ori_kd;
         Eigen::DiagonalMatrix<double,3> trans_kp;
@@ -162,7 +162,7 @@ namespace controllers {
         Eigen::DiagonalMatrix<double,3> swing_kd;
 
         double weight_q1 = 1;//运动学的权重
-        double weight_q2 = 0.001;//动力学（力矩）的权重
+        double weight_q2 = 0.005;//动力学（力矩）的权重
 
         // ================= 1. 模板化：Eigen 任意矩阵表达式 → QuadProg++ Matrix =================
         // 支持 MatrixXd、MatrixXd::block()、MatrixXd::topLeftCorner() 等所有 Eigen 矩阵表达式

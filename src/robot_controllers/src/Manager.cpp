@@ -5,7 +5,7 @@
 
 namespace controllers {
 
-    void Manager::update(Robot_info &robot,Gait_info &gait,Swing_info &swing)
+    void Manager::update(Robot_info &robot,Gait_info &gait,Swing_info &swing,Wbc_info &wbc)
     {
         if(gait.Gait_mode == none)
         {
@@ -13,14 +13,15 @@ namespace controllers {
         }else
         {
             //swing
-            swing_pos_control(robot,gait,swing);
+            // swing_pos_control(robot,gait,swing);
             //stand
             if( robot.mpc_use == 0 )
             {
                 stand_pos_control(robot,gait); 
             }else
             {
-                stand_torque_control(robot,gait); 
+                // stand_torque_control(robot,gait); //纯mpc
+                wbc_control(robot,gait,wbc);
             }
             
         }
@@ -139,4 +140,15 @@ namespace controllers {
         }
     }
 
+    void Manager::wbc_control(Robot_info &robot,Gait_info &gait,Wbc_info &wbc)
+    {
+        for(int i=0;i<4;i++)
+        { 
+                robot.Pos_motor_cmd.segment<3>(i*3) = wbc.delta_pos.segment<3>(i*3) + robot.Pos_motor.segment<3>(i*3);
+                robot.Vel_motor_cmd.segment<3>(i*3) = wbc.vel.segment<3>(i*3);
+                robot.Kp_motor.segment<3>(i*3).setConstant(kp_cmd);
+                robot.Kd_motor.segment<3>(i*3).setConstant(kd_cmd);
+                robot.Torque_motor.segment<3>(i*3) = wbc.torque.segment<3>(i*3);
+        }
+    }
 }
