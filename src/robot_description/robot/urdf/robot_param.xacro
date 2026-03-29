@@ -20,12 +20,12 @@
         <xacro:property name="motor2_torque" value="36.0"/>
         <xacro:property name="motor2_vel" value="17.3"/>
         <!--关节角度限制 最小 最大-->
-        <xacro:property name="joint1_lb" value="-3.14"/>
-        <xacro:property name="joint1_ub" value="3.14"/>
-        <xacro:property name="joint2_lb" value="-3.14"/>
-        <xacro:property name="joint2_ub" value="3.14"/>
-        <xacro:property name="joint3_lb" value="-3.14"/>
-        <xacro:property name="joint3_ub" value="3.14"/>
+        <xacro:property name="joint1_lb" value="-0.75"/>
+        <xacro:property name="joint1_ub" value="0.75"/>
+        <xacro:property name="joint2_lb" value="-1.3"/>
+        <xacro:property name="joint2_ub" value="2.8"/>
+        <xacro:property name="joint3_lb" value="-2.805"/>
+        <xacro:property name="joint3_ub" value="-0.755"/>
 
     <!--body link-->
         <!--质量-->
@@ -67,7 +67,7 @@
 
         <!--joint2-->
             <!--关节初始偏移量 gazebo需要 mujoco不需要-->
-            <xacro:property name="joint2_offest_init" value="0.785"/> <!--45°-->
+            <xacro:property name="joint2_offest_init" value="0.0"/> <!--45°-->
             <!--关节相对父连杆的位置偏移-->
             <xacro:property name="joint2_offest_x" value="0.0"/>
             <xacro:property name="joint2_offest_y" value="0.0993"/>
@@ -89,7 +89,7 @@
 
         <!--joint3-->
             <!--关节初始偏移量 gazebo需要 mujoco不需要-->
-            <xacro:property name="joint3_offest_init" value="-2.355"/> <!---135°-->
+            <xacro:property name="joint3_offest_init" value="0.0"/> <!---135°-->
             <!--关节相对父连杆的位置偏移-->
             <xacro:property name="joint3_offest_x" value="0.0"/>
             <xacro:property name="joint3_offest_y" value="0.0"/>
@@ -134,22 +134,24 @@
         <xacro:property name="collision_body_width" value="0.256"/>
         <xacro:property name="collision_body_height" value="0.118"/>
     <!--link1 默认一个圆柱 长度 半径-->
-        <xacro:property name="collision_link1_length" value="0.06"/>
+        <xacro:property name="collision_link1_length" value="0.07"/>
         <xacro:property name="collision_link1_radius" value="0.038"/>
-        <xacro:property name="collision_link1_offest_y" value="-0.033"/>
+        <xacro:property name="collision_link1_offest_y" value="0.0"/>
     <!--link2 默认一个圆柱(长度 半径) 一个box（长宽高）-->
-        <xacro:property name="collision_link2_length1" value="0.117"/>
+        <xacro:property name="collision_link2_length1" value="0.07"/>
         <xacro:property name="collision_link2_radius" value="0.038"/>
-        <xacro:property name="collision_link2_offest_y" value="-0.036"/>
+        <xacro:property name="collision_link2_offest_y" value="-0.02"/>
 
-        <xacro:property name="collision_link2_length2" value="0.165"/>
+        <xacro:property name="collision_link2_length2" value="0.21"/>
         <xacro:property name="collision_link2_width" value="0.04"/>
-        <xacro:property name="collision_link2_height" value="0.06"/>
-        <xacro:property name="collision_link2_offest_z" value="-0.125"/>
+        <xacro:property name="collision_link2_height" value="0.04"/>
+        <xacro:property name="collision_link2_offest_z" value="-0.105"/>
+        <xacro:property name="collision_link2_offest_x" value="-0.02"/>
     <!--link3 默认一个圆柱 长度 半径-->
-        <xacro:property name="collision_link3_length" value="0.21"/>
-        <xacro:property name="collision_link3_radius" value="0.019"/>
         <xacro:property name="collision_link3_offest_z" value="-0.105"/>
+        <xacro:property name="collision_link3_length" value="0.21"/>
+        <xacro:property name="collision_link3_width" value="0.016"/>
+        <xacro:property name="collision_link3_height" value="0.016"/>
     <!--link4 默认一个球 半径-->
         <xacro:property name="collision_link4_radius" value="0.018"/>
 

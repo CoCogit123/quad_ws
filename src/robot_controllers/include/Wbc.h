@@ -72,10 +72,10 @@ namespace controllers {
             //pid 
             //转动
             ori_kp.diagonal() = Eigen::Vector3d(100, 100, 100);
-            ori_kd.diagonal() = Eigen::Vector3d(5, 5, 5);
+            ori_kd.diagonal() = Eigen::Vector3d(10, 10, 10);
             //平动
             trans_kp.diagonal() = Eigen::Vector3d(100, 100, 100);
-            trans_kd.diagonal() = Eigen::Vector3d(5, 5, 5);
+            trans_kd.diagonal() = Eigen::Vector3d(8, 8, 8);
             //摆动相
             swing_kp.diagonal() = Eigen::Vector3d(100, 100, 100);
             swing_kd.diagonal() = Eigen::Vector3d(5, 5, 5);

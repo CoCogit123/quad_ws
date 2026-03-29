@@ -28,3 +28,9 @@ WARNING: mju_openResource: unknown file '/home/coco/dog_ws'
 Thu Jun 26 21:36:42 2025
 WARNING: mju_openResource: unknown file '/home/coco/dog_ws/src/robot_description/self_V1/urdf/test.urdf'
 
+Mon Mar 16 17:14:21 2026
+WARNING: OpenGL error 0x501 in or before mjr_makeContext
+
+Sun Mar 22 20:26:48 2026
+WARNING: OpenGL error 0x501 in or before mjr_makeContext
+

@@ -105,7 +105,7 @@
         </collision>
         <collision>
             <origin
-                xyz="0 0 ${collision_link2_offest_z}" rpy="0 1.57 0" />
+                xyz="${collision_link2_offest_x} 0 ${collision_link2_offest_z}" rpy="0 1.657 0" />
             <geometry>
                 <box size="${collision_link2_length2} ${collision_link2_width} ${collision_link2_height}"/>
             </geometry>
@@ -157,9 +157,9 @@
         <collision>
             <origin
                 xyz="0 0 ${collision_link3_offest_z}"
-                rpy="0 0 0" />
+                rpy="0 1.57 0" />
             <geometry>
-                <cylinder length="${collision_link3_length}" radius="${collision_link3_radius}"/>
+                <box size="${collision_link3_length} ${collision_link3_width} ${collision_link3_height}"/>
             </geometry>
         </collision>
     </link>

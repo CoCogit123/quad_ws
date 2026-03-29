@@ -1,0 +1,74 @@
+<mujoco model="robot">
+  <compiler angle="radian"/>
+  <worldbody>
+    <geom size="0.128 0.128 0.059" type="box" rgba="0.17 0.17 0.17 1"/>
+    <body name="leg1_link1" pos="0.177 -0.0755 0">
+      <inertial pos="-0.00461 0.02471 0.00019" quat="0.28679 0.646337 -0.28679 0.646337" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/>
+      <joint name="leg1_joint1" pos="0 0 0" axis="1 0 0" range="-0.75 0.75" damping="0.1" frictionloss="0.01"/>
+      <geom size="0.038 0.035" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.95 0.95 0.93 1"/>
+      <body name="leg1_link2" pos="0 -0.0993 0">
+        <inertial pos="-0.00238 0.02441 -0.04244" quat="0.981879 0.109326 -0.0415327 0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/>
+        <joint name="leg1_joint2" pos="0 0 0" axis="0 1 0" range="-1.3 2.8" damping="0.1" frictionloss="0.01"/>
+        <geom size="0.038 0.035" pos="0 0.02 0" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.82 0.84 0.85 1"/>
+        <geom size="0.105 0.02 0.02" pos="-0.02 0 -0.105" quat="0.675982 0 0.736918 0" type="box" rgba="0.82 0.84 0.85 1"/>
+        <body name="leg1_link3" pos="0 0 -0.21">
+          <inertial pos="0.00353064 0 -0.103181" quat="0.999797 0 0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/>
+          <joint name="leg1_joint3" pos="0 0 0" axis="0 1 0" range="-2.805 -0.755" damping="0.01" frictionloss="0.2"/>
+          <geom size="0.105 0.008 0.008" pos="0 0 -0.105" quat="0.707388 0 0.706825 0" type="box" rgba="0.3 0.3 0.3 1"/>
+          <geom size="0.018" pos="0 0 -0.21" rgba="0.05 0.05 0.05 1"/>
+        </body>
+      </body>
+    </body>
+    <body name="leg2_link1" pos="0.177 0.0755 0">
+      <inertial pos="-0.00461 -0.02471 0.00019" quat="0.646337 0.28679 -0.646337 0.28679" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/>
+      <joint name="leg2_joint1" pos="0 0 0" axis="1 0 0" range="-0.75 0.75" damping="0.1" frictionloss="0.01"/>
+      <geom size="0.038 0.035" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.95 0.95 0.93 1"/>
+      <body name="leg2_link2" pos="0 0.0993 0">
+        <inertial pos="-0.00238 -0.02441 -0.04244" quat="0.981879 -0.109326 -0.0415327 -0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/>
+        <joint name="leg2_joint2" pos="0 0 0" axis="0 1 0" range="-1.3 2.8" damping="0.1" frictionloss="0.01"/>
+        <geom size="0.038 0.035" pos="0 -0.02 0" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.82 0.84 0.85 1"/>
+        <geom size="0.105 0.02 0.02" pos="-0.02 0 -0.105" quat="0.675982 0 0.736918 0" type="box" rgba="0.82 0.84 0.85 1"/>
+        <body name="leg2_link3" pos="0 0 -0.21">
+          <inertial pos="0.00353064 0 -0.103181" quat="0.999797 0 0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/>
+          <joint name="leg2_joint3" pos="0 0 0" axis="0 1 0" range="-2.805 -0.755" damping="0.01" frictionloss="0.2"/>
+          <geom size="0.105 0.008 0.008" pos="0 0 -0.105" quat="0.707388 0 0.706825 0" type="box" rgba="0.3 0.3 0.3 1"/>
+          <geom size="0.018" pos="0 0 -0.21" rgba="0.05 0.05 0.05 1"/>
+        </body>
+      </body>
+    </body>
+    <body name="leg3_link1" pos="-0.177 -0.0755 0">
+      <inertial pos="0.00461 0.02471 0.00019" quat="0.646337 0.28679 -0.646337 0.28679" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/>
+      <joint name="leg3_joint1" pos="0 0 0" axis="1 0 0" range="-0.75 0.75" damping="0.1" frictionloss="0.01"/>
+      <geom size="0.038 0.035" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.95 0.95 0.93 1"/>
+      <body name="leg3_link2" pos="0 -0.0993 0">
+        <inertial pos="0.00238 0.02441 -0.04244" quat="0.981879 0.109326 0.0415327 -0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/>
+        <joint name="leg3_joint2" pos="0 0 0" axis="0 1 0" range="-1.3 2.8" damping="0.1" frictionloss="0.01"/>
+        <geom size="0.038 0.035" pos="0 0.02 0" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.82 0.84 0.85 1"/>
+        <geom size="0.105 0.02 0.02" pos="-0.02 0 -0.105" quat="0.675982 0 0.736918 0" type="box" rgba="0.82 0.84 0.85 1"/>
+        <body name="leg3_link3" pos="0 0 -0.21">
+          <inertial pos="-0.00353064 0 -0.103181" quat="0.999797 0 -0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/>
+          <joint name="leg3_joint3" pos="0 0 0" axis="0 1 0" range="-2.805 -0.755" damping="0.01" frictionloss="0.2"/>
+          <geom size="0.105 0.008 0.008" pos="0 0 -0.105" quat="0.707388 0 0.706825 0" type="box" rgba="0.3 0.3 0.3 1"/>
+          <geom size="0.018" pos="0 0 -0.21" rgba="0.05 0.05 0.05 1"/>
+        </body>
+      </body>
+    </body>
+    <body name="leg4_link1" pos="-0.177 0.0755 0">
+      <inertial pos="0.00461 -0.02471 0.00019" quat="0.28679 0.646337 -0.28679 0.646337" mass="0.68678" diaginertia="0.00057 0.000555249 0.000454751"/>
+      <joint name="leg4_joint1" pos="0 0 0" axis="1 0 0" range="-0.75 0.75" damping="0.1" frictionloss="0.01"/>
+      <geom size="0.038 0.035" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.95 0.95 0.93 1"/>
+      <body name="leg4_link2" pos="0 0.0993 0">
+        <inertial pos="0.00238 -0.02441 -0.04244" quat="0.981879 -0.109326 0.0415327 0.149121" mass="1.22859" diaginertia="0.00760341 0.00707203 0.00135456"/>
+        <joint name="leg4_joint2" pos="0 0 0" axis="0 1 0" range="-1.3 2.8" damping="0.1" frictionloss="0.01"/>
+        <geom size="0.038 0.035" pos="0 -0.02 0" quat="0.707388 0.706825 0 0" type="cylinder" rgba="0.82 0.84 0.85 1"/>
+        <geom size="0.105 0.02 0.02" pos="-0.02 0 -0.105" quat="0.675982 0 0.736918 0" type="box" rgba="0.82 0.84 0.85 1"/>
+        <body name="leg4_link3" pos="0 0 -0.21">
+          <inertial pos="-0.00353064 0 -0.103181" quat="0.999797 0 -0.0201409 0" mass="0.21703" diaginertia="0.0011769 0.00117616 3.92612e-05"/>
+          <joint name="leg4_joint3" pos="0 0 0" axis="0 1 0" range="-2.805 -0.755" damping="0.01" frictionloss="0.2"/>
+          <geom size="0.105 0.008 0.008" pos="0 0 -0.105" quat="0.707388 0 0.706825 0" type="box" rgba="0.3 0.3 0.3 1"/>
+          <geom size="0.018" pos="0 0 -0.21" rgba="0.05 0.05 0.05 1"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

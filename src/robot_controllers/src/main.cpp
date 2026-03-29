@@ -31,10 +31,12 @@
 #include <sensor_msgs/Joy.h> //joy消息包
 #include <unistd.h> //CPU亲密性
 #include <sys/syscall.h> //CPU亲密性
+#include <sched.h>
 
 using namespace controllers;//自定义工作空间
 double get_loop_interval(void);
 bool setThreadCpuAffinity(std::thread& thread, int cpu_core);//设置cpu的亲密性
+bool setThreadPriority(std::thread& thread, int priority);//设置cpu的线程
 
 #define using_time 0  //0：使用不停止的接近现实时间  1：使用mujoco时间
 double time_mujoco;
@@ -345,7 +347,7 @@ int main(int argc, char** argv) {
         }
     });
     setThreadCpuAffinity(thread_high,14);
-
+    setThreadPriority(thread_high, 50);
     // =========================================================
     // 线程 2 (200Hz) 
     // =========================================================
@@ -428,6 +430,7 @@ int main(int argc, char** argv) {
         }
     });
     setThreadCpuAffinity(thread_low,15);
+    // setThreadPriority(thread_low, 60);
     // =========================================================
     // 线程 3 (200Hz)  用于打印调试数据
     // =========================================================
@@ -495,7 +498,7 @@ int main(int argc, char** argv) {
             static int wbc_count = 0;
             if (++wbc_count >= (target_freq/10) && Mpc_solver.mpc_init_flag == true ) { //10hz
                 // Wbc_solver.debug(wbc_info);
-                Debug_wbc_info(wbc_info,5);
+                // Debug_wbc_info(wbc_info,5);
                 wbc_count = 0;
             }
 
@@ -627,5 +630,22 @@ bool setThreadCpuAffinity(std::thread& thread, int cpu_core) {
     }
 
     ROS_INFO("set CPU %d success ", cpu_core);
+    return true;
+}
+
+bool setThreadPriority(std::thread& thread, int priority) {
+    sched_param sch;
+    sch.sched_priority = priority;
+    pthread_t thread_handle = thread.native_handle();
+    
+    // SCHED_FIFO 是一种实时调度策略，通常用于要求高响应的控制线程
+    // 注意：在普通用户权限下，这可能会失败（返回非0错误码）
+    int ret = pthread_setschedparam(thread_handle, SCHED_FIFO, &sch);
+    if (ret != 0) {
+        ROS_ERROR("Set thread priority error! code : %d", ret);
+        return false;
+    }
+
+    ROS_INFO("Set thread priority to %d success", priority);
     return true;
 }

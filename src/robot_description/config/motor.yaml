@@ -2,7 +2,7 @@ dog_controllers:
   # Publish all joint states -----------------------------------
   joint_state_controller:
     type: joint_state_controller/JointStateController
-    publish_rate: 2000  
+    publish_rate: 500  
  
   # effort Controllers ---------------------------------------
   leg1_1:
